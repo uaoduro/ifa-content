@@ -203,6 +203,16 @@ details.fold[open] summary{margin-bottom:8px}
 .ilink{margin:6px 0 0;font-size:13.5px}
 .iacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 
+.cchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin:0 0 12px;max-width:860px}
+.cchips button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13.5px;cursor:pointer;color:var(--muted)}
+.cchips button span{font-size:12px;opacity:.8}
+.cchips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.importlink{margin:14px 0 0}
+.linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;font-size:14px;text-decoration:underline}
+.implist{display:flex;flex-direction:column;gap:8px;margin:4px 0 8px}
+.implist .pc{align-items:flex-start}
+.implist small{display:block;color:var(--muted);font-size:12px}
+
 /* ----- badges & pills ----- */
 .pl{display:inline-block;font:700 10px/1.4 var(--body);letter-spacing:.03em;padding:0 5px;border-radius:4px;border:1.5px solid var(--pc);color:var(--pc);background:transparent}
 .pl.on{background:var(--pc);color:var(--pcf)}
@@ -512,7 +522,18 @@ const QUICK = {
   khalid: ["Fill in the [brackets] for this script","Approve this script","Record this video","Review the final edit","Send a graduate story or contact","Get permission to film at the gym","Send the masterclass link","Share account logins"],
   umar:   ["Write script","Edit video","Cut shorts from this video","Thumbnail and description","Post and tick platforms","Check signups and watch time","Monthly report"]
 };
-const TOPICS = ["Training tips","Gym habits & myths","Khalid's story","Gym-floor questions","Trainer life & IFA","Other"];
+const TOPICS = ["Training tips","Nutrition & fat loss","Gym habits & myths","Khalid's story","Gym-floor questions","Trainer life & IFA","Other"];
+const DEFAULT_COURSES = ["General","Personal trainer course","Nutrition"];
+const courseOf = v => v.course || "General";
+const courseList = () => { const set = [...(state.courses || DEFAULT_COURSES)]; videoList().forEach(v => { if (v.course && !set.includes(v.course)) set.push(v.course); }); return set; };
+function courseField(id, current){
+  return `<div class="field full"><label for="${id}">Course</label><select id="${id}" data-course-select>${courseList().map(c => `<option ${c === (current || "General") ? "selected" : ""}>${esc(c)}</option>`).join("")}<option value="__new">+ New course…</option></select><input id="${id}New" placeholder="Course name" hidden style="margin-top:6px"></div>`;
+}
+function courseValue(id){ const sel = $(id); if (!sel) return "General"; if (sel.value !== "__new") return sel.value;
+  const name = $(id+"New").value.trim(); if (!name) return "General";
+  if (!courseList().includes(name)){ state.courses = [...courseList(), name]; save("settings","courses",{list: state.courses}); }
+  return name; }
+document.addEventListener("change", e => { if (e.target.matches && e.target.matches("[data-course-select]")){ const n = $(e.target.id+"New"); n.hidden = e.target.value !== "__new"; if (!n.hidden) n.focus(); } });
 const ROLE_NOTE = { umar:"Content", khalid:"Trainer" };
 const NAV = {
   umar:   [["today","Today"],["calendar","Calendar"],["videos","Videos"],["ideas","Ideas"],["tasks","Tasks"],["templates","Templates"],["strategy","Strategy"]],
@@ -556,7 +577,7 @@ Payoff
 
 CTA
 - `;
-const HEADINGS = ["hook","body","format","credibility","main points","points","proof","cta","call to action","moments","one point","payoff","notes","shoot notes","intro","outro","b-roll","title"];
+const HEADINGS = ["opening hook","video sequence","sequence","shots","nutritional facts","facts to keep right","facts","suggested serving","serving","suggested script","script","on-screen text","on screen text","hook","body","format","credibility","main points","points","proof","cta","call to action","moments","one point","payoff","notes","shoot notes","intro","outro","b-roll","title"];
 // Weekly slots used by "Plan next week"
 const SLOTS = [
   {slot:"S1", name:"Myth-buster short", day:0, when:"After Isha", fromPrev:true},
@@ -747,8 +768,9 @@ function readyRow(v){
     <button type="button" class="vrow film" data-open="${esc(v.id)}"><span class="main"><span class="t" dir="auto">${esc(v.title)}</span><span class="m">${esc(meta)}</span></span><span class="go" aria-hidden="true">›</span></button></div>`;
 }
 function renderReady(){
-  const f = state.readyFilter || "all";
-  const match = v => f === "all" || (f === "long" ? v.kind === "long" : v.kind !== "long");
+  const f = state.readyFilter || "all", cf = state.readyCourse || "all";
+  const typeOk = v => f === "all" || (f === "long" ? v.kind === "long" : v.kind !== "long");
+  const match = v => typeOk(v) && (cf === "all" || courseOf(v) === cf);
   const vids = videoList();
   const readyAll = vids.filter(v => (v.status||0) === S.READY);
   const ready = readyAll.filter(match);
@@ -759,9 +781,12 @@ function renderReady(){
   ready.sort((a,b) => (a.post||"9999").localeCompare(b.post||"9999")).forEach(v => {
     const g = groups.find(x => x[0] === topicOf(v)) || groups[groups.length-1]; g[1].push(v);
   });
-  const cnt = k => readyAll.filter(v => k === "all" || (k === "long" ? v.kind === "long" : v.kind !== "long")).length;
+  const cnt = k => readyAll.filter(v => (cf === "all" || courseOf(v) === cf) && (k === "all" || (k === "long" ? v.kind === "long" : v.kind !== "long"))).length;
+  const usedCourses = courseList().filter(c => readyAll.some(v => courseOf(v) === c));
+  const chips = usedCourses.length > 1 ? `<div class="cchips" role="group" aria-label="Course"><button type="button" data-rc="all" aria-pressed="${cf==="all"}">All courses</button>${usedCourses.map(c => `<button type="button" data-rc="${esc(c)}" aria-pressed="${cf===c}">${esc(c)} <span>${readyAll.filter(v => courseOf(v) === c).length}</span></button>`).join("")}</div>` : "";
   $("v-ready").innerHTML = `<div class="top"><h1>Ready to film</h1><span class="grow"></span>
       <div class="seg" role="group" aria-label="Show">${[["all","All"],["short","Shorts"],["long","YouTube"]].map(([k,l]) => `<button type="button" data-rf="${k}" aria-pressed="${f===k}">${l} ${cnt(k)}</button>`).join("")}</div></div>
+    ${chips}
     <p class="lead">Grouped by topic. Tap a script to read it, tick it once it's recorded.</p>
     ${ready.length ? groups.filter(g => g[1].length).map(([t,list]) => `<div class="grp"><h2>${t}<span class="n">${list.length}</span></h2><div class="rows">${list.map(readyRow).join("")}</div></div>`).join("")
       : `<p class="empty">Nothing left to film${f !== "all" ? " here" : ""}. Umar will add scripts when they're done.</p>`}
@@ -799,7 +824,7 @@ function renderVideo(){
       ${v.film ? `<span>Film <b>${esc(fmtShort(v.film))}</b></span>` : parent ? `<span>Cut from <a href="#video" data-open="${esc(parent.id)}">${esc(parent.title)}</a></span>` : ""}
       ${v.post ? `<span>Posts <b>${esc(fmtShort(v.post))}</b>${v.when ? ", " + esc(v.when) : ""}</span>` : ""}
       ${(v.plats||[]).length ? `<span>On ${badges(v)}</span>` : ""}
-      ${v.pillar ? `<span>${esc(v.pillar)}</span>` : ""}
+      <span>${esc(courseOf(v))}${v.pillar ? " · " + esc(v.pillar) : ""}</span>
     </div>`;
   // Khalid's main action
   if (!isUmar() && v.film){
@@ -1032,6 +1057,7 @@ function openSheet(v, presetDay){
       <div class="field" id="fFilmWrap"><label for="fFilm">Film day</label><input type="date" id="fFilm" value="${esc(v.film||"")}"></div>
       <div class="field"><label for="fPost">Post day</label><input type="date" id="fPost" value="${esc(v.post||"")}"></div>
       <div class="field"><label for="fWhen">Post time</label><select id="fWhen">${["After Fajr","After Dhuhr","After Asr","After Maghrib","After Isha"].map(w => `<option ${v.when===w?"selected":""}>${w}</option>`).join("")}</select></div>
+      ${courseField("fCourse", v.course)}
       <div class="field"><label for="fTopic">Topic</label><select id="fTopic">${TOPICS.map(t => `<option ${topicOf(v)===t?"selected":""}>${esc(t)}</option>`).join("")}</select></div>
       <div class="field full"><span class="lab">Post on</span><div class="ticks">${PLAT_ORDER.map(p => `<label class="pc"><input type="checkbox" name="fPlat" value="${p}" ${(v.plats||[]).includes(p)?"checked":""}><span class="pl p-${p} on">${PLATFORMS[p].short}</span>${PLATFORMS[p].label}</label>`).join("")}</div></div>
     </div>
@@ -1046,7 +1072,7 @@ function openSheet(v, presetDay){
     const short = $("fKind").value === "short", parent = short ? $("fParent").value : "";
     const body = { ...(editing ? state.videos[v.id] : {created:Date.now(), script:"", posted:{}}),
       title:$("fTitle").value.trim(), kind: short ? "short" : "long", status:+$("fStatus").value,
-      parent: parent || null, film: parent ? "" : $("fFilm").value, post:$("fPost").value, when:$("fWhen").value, topic:$("fTopic").value,
+      parent: parent || null, film: parent ? "" : $("fFilm").value, post:$("fPost").value, when:$("fWhen").value, topic:$("fTopic").value, course: courseValue("fCourse"),
       plats:[...document.querySelectorAll("input[name=fPlat]:checked")].map(i => i.value) };
     if (!body.title) return;
     const id = editing ? v.id : newId("v");
@@ -1065,6 +1091,7 @@ function openAdd(type, preset){
   const longs = videoList().filter(x => x.kind === "long").sort(byPost).reverse();
   const upcoming = videoList().filter(v => !v.post || v.post >= todayKey()).sort(byPost);
   const draw = () => {
+    if (st.type === "import"){ drawImport(); return; }
     const vid = st.type === "long" || st.type === "short";
     const isIdea = st.type === "idea";
     $("overlay").innerHTML = `<form class="sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addTitle">
@@ -1078,6 +1105,7 @@ function openAdd(type, preset){
       ${vid ? `<div class="fgrid">
         <div class="field full"><label for="aTitle">Title</label><input id="aTitle" dir="auto" required placeholder="${st.type==="long" ? "e.g. How to get your first 5 clients" : "e.g. Rating gym habits"}" value="${esc(preset.title||"")}"></div>
         ${st.type==="short" && longs.length ? `<div class="field full"><label for="aParent">Cut from</label><select id="aParent"><option value="">Filmed on its own</option>${longs.map(l => `<option value="${esc(l.id)}">${esc(l.title)}</option>`).join("")}</select></div>` : ""}
+        ${courseField("aCourse", state.readyCourse && state.readyCourse !== "all" ? state.readyCourse : "General")}
         <div class="field full"><label for="aTopic">Topic</label><select id="aTopic">${TOPICS.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
         <div class="field" id="aFilmWrap"><label for="aFilm">Record date</label><input type="date" id="aFilm" value="${esc(preset.film||"")}"></div>
         <div class="field"><label for="aPost">Post date</label><input type="date" id="aPost" value="${esc(preset.post||"")}"></div>
@@ -1093,6 +1121,7 @@ function openAdd(type, preset){
         <div class="field"><label for="aDue">Due date</label><input type="date" id="aDue" value="${esc(preset.post||"")}"></div>
         <div class="field"><label for="aVid">About a video <small style="font-weight:400;color:var(--muted)">optional</small></label><select id="aVid"><option value="">None</option>${upcoming.map(v => `<option value="${esc(v.id)}">${esc(v.title)}</option>`).join("")}</select></div>
       </div>`}
+      ${isUmar() ? `<p class="importlink"><button type="button" class="linkbtn" data-type="import">Got a whole document of video ideas? Paste it in →</button></p>` : ""}
       <div class="foot"><span class="status" id="addNote"></span><div><button class="btn" type="button" data-act="close-sheet">Cancel</button><button class="btn primary" type="submit">Add</button></div></div>
     </form>`;
     $("overlay").hidden = false;
@@ -1116,7 +1145,7 @@ function openAdd(type, preset){
         const newVid = newId("v");
         save("videos", newVid, { title, kind: short ? "short" : "long", status: preset.fromIdea ? S.SCRIPTING : (script.trim() ? S.READY : S.IDEA), parent: parent || null,
           film: parent ? "" : $("aFilm").value, post: $("aPost").value, when: short ? "After Isha" : "After Asr",
-          plats: short ? SHORT_PLATS.slice() : ["yt"], pillar:"", topic: $("aTopic").value, script, posted:{}, created: Date.now() });
+          plats: short ? SHORT_PLATS.slice() : ["yt"], pillar:"", topic: $("aTopic").value, course: courseValue("aCourse"), script, posted:{}, created: Date.now() });
         if (preset.fromIdea && state.ideas[preset.fromIdea]) save("ideas", preset.fromIdea, {...state.ideas[preset.fromIdea], status:"used", video: newVid});
         setStatus(`Added "${title}"`);
       } else {
@@ -1127,7 +1156,48 @@ function openAdd(type, preset){
       closeSheet(); renderNav(); renderView();
     };
   };
+  function drawImport(){
+    $("overlay").innerHTML = `<form class="sheet" id="impSheet" role="dialog" aria-modal="true" aria-labelledby="impTitle">
+      <h2 id="impTitle">Paste a content plan</h2>
+      <p class="status" style="margin-bottom:12px">Paste the whole document. Each section starting "Video 1 –", "Video 2 –" (or "Short 1:") becomes its own video with that section as its script.</p>
+      <div class="fgrid">
+        <div class="field full"><label for="impText">Document</label><textarea id="impText" dir="auto" style="min-height:180px" placeholder="Paste here"></textarea></div>
+        ${courseField("impCourse", "General")}
+        <div class="field"><label for="impKind">Type</label><select id="impKind"><option value="short">Shorts</option><option value="long">YouTube videos</option></select></div>
+        <div class="field"><label for="impTopic">Topic</label><select id="impTopic">${TOPICS.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
+      </div>
+      <div id="impPreview"></div>
+      <div class="foot"><button class="btn" type="button" data-type="short">‹ Back</button><div><button class="btn" type="button" id="impFind">Find videos</button><button class="btn primary" type="submit" id="impGo" disabled>Add videos</button></div></div>
+    </form>`;
+    $("overlay").hidden = false; setTimeout(() => $("impText").focus(), 0);
+    let found = [];
+    const find = () => {
+      found = splitPlan($("impText").value);
+      $("impPreview").innerHTML = found.length
+        ? `<div class="subhead">Found ${found.length} video${found.length === 1 ? "" : "s"}</div><div class="implist">${found.map((x,i) => `<label class="pc"><input type="checkbox" data-imp="${i}" checked><span><b dir="auto">${esc(x.title)}</b><small>${esc(x.script.split("\n").filter(Boolean).length)} lines</small></span></label>`).join("")}</div><p class="status">Anything after the last video (like a posting strategy) stays in its script. You can trim it after.</p>`
+        : `<p class="status">No "Video 1 –" style headings found. Add the video as a single Short or YouTube video instead.</p>`;
+      $("impGo").disabled = !found.length;
+    };
+    $("impFind").onclick = find;
+    $("impSheet").onclick = e => { const t = e.target.closest("[data-type]"); if (t){ st.type = t.dataset.type; draw(); } };
+    $("impSheet").onsubmit = e => {
+      e.preventDefault(); if (!found.length) find(); if (!found.length) return;
+      const course = courseValue("impCourse"), kind = $("impKind").value, topic = $("impTopic").value;
+      const keep = found.filter((x,i) => { const c = document.querySelector(`[data-imp="${i}"]`); return !c || c.checked; });
+      keep.forEach(x => save("videos", newId("v"), { title:x.title, kind, status:S.READY, parent:null, film:"", post:"", when: kind === "long" ? "After Asr" : "After Isha",
+        plats: kind === "long" ? ["yt"] : SHORT_PLATS.slice(), pillar:"", topic, course, script:x.script, posted:{}, created: Date.now() }));
+      setStatus(`Added ${keep.length} video${keep.length === 1 ? "" : "s"}`); closeSheet(); renderNav(); renderView();
+    };
+  }
   draw();
+}
+// Split a pasted plan on "Video 1 – Title" / "Short 2: Title" headings
+function splitPlan(txt){
+  const lines = String(txt || "").replace(/\r/g, "").split("\n");
+  const re = /^\s*(?:video|short|reel|script)\s*#?\s*\d+\s*[–—:\-.]\s*(.+?)\s*$/i;
+  const out = []; let cur = null;
+  lines.forEach(l => { const m = re.exec(l); if (m){ cur = {title: m[1].slice(0, 90), body: []}; out.push(cur); } else if (cur) cur.body.push(l); });
+  return out.map(x => ({ title: x.title, script: x.body.join("\n").replace(/\n{3,}/g, "\n\n").trim() })).filter(x => x.title);
 }
 
 /* ================= Plan a week from the templates ================= */
@@ -1225,6 +1295,7 @@ $("launch").addEventListener("change", e => { if (e.target.value){ state.launch 
 document.addEventListener("click", e => {
   const o = e.target.closest("[data-open]");
   if (o){ e.preventDefault(); openVideo(o.dataset.open); return; }
+  const rc = e.target.closest("[data-rc]"); if (rc){ state.readyCourse = rc.dataset.rc; renderReady(); return; }
   const rf = e.target.closest("[data-rf]"); if (rf){ state.readyFilter = rf.dataset.rf; renderReady(); return; }
   const tw = e.target.closest("[data-tw]"); if (tw){ state.taskWho = tw.dataset.tw; renderTasks(); return; }
   const bd = e.target.closest("[data-board]"); if (bd){ state.board = bd.dataset.board; renderBoard(); return; }
@@ -1303,6 +1374,7 @@ function applyCache(){
   const live = col => { const o = {}; Object.entries(cache[col]||{}).forEach(([id,x]) => { if (!x.deleted) o[id] = x.data; }); return o; };
   state.videos = live("videos"); state.tasks = live("tasks"); state.ideas = live("ideas");
   const st = (cache.settings||{}).main; state.launch = (st && !st.deleted && st.data.launch) || DEFAULT_LAUNCH;
+  const cs = (cache.settings||{}).courses; state.courses = (cs && !cs.deleted && Array.isArray(cs.data.list) && cs.data.list.length) ? cs.data.list : DEFAULT_COURSES;
   $("launch").value = state.launch;
 }
 async function rpc(fn, body){
@@ -1352,7 +1424,7 @@ async function seed(){
   } catch(e){ setStatus("Couldn't load the starting scripts."); }
 }
 function save(col, id, body){
-  if (col === "settings"){ state.launch = body.launch; queueItem("settings", "main", {launch: body.launch}, false); return; }
+  if (col === "settings"){ if (id === "main"){ state.launch = body.launch; } queueItem("settings", id, body, false); return; }
   state[col][id] = body; queueItem(col, id, body, false);
   if (col === "tasks" && (state.view === "tasks" || state.view === "today")) renderView();
 }
