@@ -484,7 +484,7 @@ aside.panel{border-left:1px solid var(--line);background:var(--surface);padding:
 
     <section class="view" id="v-templates">
       <div class="top"><h1>Templates</h1></div>
-      <p class="lead">The formats every week runs on. "Plan next week" uses these to create the week's videos.</p>
+      <p class="lead">The formats every week runs on.</p>
       <div class="cards" id="tplCards"></div>
     </section>
 
@@ -578,15 +578,6 @@ Payoff
 CTA
 - `;
 const HEADINGS = ["opening hook","video sequence","sequence","shots","nutritional facts","facts to keep right","facts","suggested serving","serving","suggested script","script","on-screen text","on screen text","hook","body","format","credibility","main points","points","proof","cta","call to action","moments","one point","payoff","notes","shoot notes","intro","outro","b-roll","title"];
-// Weekly slots used by "Plan next week"
-const SLOTS = [
-  {slot:"S1", name:"Myth-buster short", day:0, when:"After Isha", fromPrev:true},
-  {slot:"S2", name:"Quick-tip short", day:2, when:"After Isha", fromPrev:true},
-  {slot:"L",  name:"Long video", day:4, when:"After Asr", film:1},
-  {slot:"S3", name:"Story short", day:5, when:"After Isha"},
-  {slot:"S4", name:"Behind-the-scenes short", day:6, when:"After Maghrib", film:1}
-];
-
 /* ================= state ================= */
 const state = {
   launch: DEFAULT_LAUNCH, videos:{}, tasks:{}, ideas:{},
@@ -738,7 +729,7 @@ function renderToday(){
     html += `<div class="sec"><p><a href="#ready">See all videos ready to film →</a></p></div>`;
   } else {
     if (!vids.length){
-      html += `<div class="sec"><h2>Start here</h2><p class="empty">No videos yet. Plan the first weeks from the weekly templates, then write each script.</p><button class="btn primary big" type="button" data-act="plan-4">Plan the first 4 weeks</button></div>`;
+      html += `<div class="sec"><h2>Start here</h2><p class="empty">No videos yet. Tap + Add to add your first video or paste in a content plan.</p></div>`;
     }
     const posting = vids.filter(v => v.post === tk).sort(byPost);
     if (vids.length) html += `<div class="sec"><h2>Posting today</h2>${posting.length ? `<div class="rows">${posting.map(v => vrow(v,"post")).join("")}</div>` : `<p class="empty">Nothing posting today.</p>`}</div>`;
@@ -799,8 +790,8 @@ function renderBoard(){
   const vids = videoList().sort(byPost);
   let html = `<div class="top"><h1>Videos</h1><span class="grow"></span>
     <div class="seg" role="group" aria-label="Group videos"><button type="button" data-board="status" aria-pressed="${state.board==="status"}">By status</button><button type="button" data-board="week" aria-pressed="${state.board==="week"}">By week</button></div>
-    ${state.readOnly ? "" : `<button class="btn" type="button" data-act="plan-next">Plan next week</button><button class="btn primary" type="button" data-act="add-long">+ New video</button>`}</div>`;
-  if (!vids.length){ html += `<p class="empty">No videos yet.</p>${state.readOnly ? "" : `<button class="btn primary big" type="button" data-act="plan-4">Plan the first 4 weeks</button>`}`; $("v-videos").innerHTML = html; return; }
+    ${state.readOnly ? "" : `<button class="btn primary" type="button" data-act="add-long">+ New video</button>`}</div>`;
+  if (!vids.length){ html += `<p class="empty">No videos yet.</p>${state.readOnly ? "" : `<p class="status">Tap + New video to add one.</p>`}`; $("v-videos").innerHTML = html; return; }
   const card = v => `<button type="button" class="bcard" data-open="${esc(v.id)}"><span class="kind">${kindLabel(v)}</span><span class="t" dir="auto">${esc(v.title)}</span><span class="m"><span>${v.post ? "Posts " + esc(fmtShort(v.post)) : "No post date"}</span>${state.board === "week" ? pill(v.status) : badges(v)}</span></button>`;
   if (state.board === "status"){
     html += `<div class="board">${STATUSES.map((s,i) => { const col = vids.filter(v => (v.status||0) === i); return `<div class="col${col.length ? "" : " empty"}"><div class="colhead">${s}<span>${col.length}</span></div>${col.map(card).join("")}</div>`; }).join("")}</div>`;
@@ -1200,33 +1191,6 @@ function splitPlan(txt){
   return out.map(x => ({ title: x.title, script: x.body.join("\n").replace(/\n{3,}/g, "\n\n").trim() })).filter(x => x.title);
 }
 
-/* ================= Plan a week from the templates ================= */
-function nextWeekToPlan(){
-  // The first week (from launch) that has no long video yet
-  const vids = videoList();
-  for (let n = 1; n < 200; n++) if (!vids.some(v => v.week === n && v.slot === "L")) return n;
-  return 1;
-}
-function planWeek(n){
-  const ws = addDays(parseKey(state.launch), 7*(n-1)), at = o => keyOf(addDays(ws,o));
-  const existing = videoList();
-  const findSlot = (w, slot) => existing.find(v => v.week === w && v.slot === slot) || plannedNow.find(v => v.week === w && v.slot === slot);
-  const plannedNow = [];
-  const has = slot => existing.some(v => v.week === n && v.slot === slot);
-  const longId = has("L") ? (existing.find(v => v.week === n && v.slot === "L") || {}).id : newId("v");
-  if (!has("L")){
-  const L = { title:`Video #${n}: ${pillarOf(n)}`, kind:"long", slot:"L", week:n, status:0, film:at(1), post:at(4), when:"After Asr", plats:["yt"], pillar:pillarOf(n), parent:null, script:"", posted:{}, created:Date.now() };
-  plannedNow.push({id:longId, ...L}); save("videos", longId, L);
-  }
-  SLOTS.filter(s => s.slot !== "L" && !has(s.slot)).forEach(s => {
-    const prevLong = s.fromPrev ? findSlot(n-1, "L") : null;
-    const parent = s.slot === "S3" ? longId : s.fromPrev ? (prevLong ? prevLong.id : null) : null;
-    const from = s.slot === "S3" ? ` (from video #${n})` : s.fromPrev ? (prevLong ? ` (from video #${n-1})` : " (backlog)") : "";
-    const body = { title:`${s.name}${from}`, kind:"short", slot:s.slot, week:n, status:0, parent, film: s.slot === "S4" ? at(1) : "", post:at(s.day), when:s.when, plats:SHORT_PLATS.slice(), pillar: s.slot === "S4" ? "Behind the scenes" : (parent ? pillarOf(s.fromPrev ? n-1 : n) : ""), script:"", posted:{}, created:Date.now() };
-    save("videos", newId("v"), body);
-  });
-}
-
 /* ================= events ================= */
 const appEl = $("app");
 function setCollapse(which, collapsed, persist=true){
@@ -1316,8 +1280,6 @@ document.addEventListener("click", e => {
       if (a.dataset.sure){ const id = state.sheetFor; closeSheet(); remove("videos", id); go(state.prevView); }
       else { a.dataset.sure = "1"; a.textContent = "Click again to delete"; }
       break;
-    case "plan-next": { const n = nextWeekToPlan(); planWeek(n); setStatus(`Planned week ${n}`); renderView(); break; }
-    case "plan-4": { for (let n = 1; n <= 4; n++) planWeek(n); renderNav(); renderView(); break; }
     case "filmed": saveVideo(v.id, {status:S.FILMED, filmedAt:Date.now()}); break;
     case "unfilm": saveVideo(v.id, {status:S.READY}); break;
     case "edit-script": state.editing = true; renderVideo(); break;
