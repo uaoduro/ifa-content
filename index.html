@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5c6e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="IFA">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>IFA Content</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: role-aware nav on the left, one view in the middle, a day panel on the right for the calendar only. */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --ink:#15212b; --muted:#5d6b76; --line:#dde3e7; --accent:#0f5c6e; --accent-bg:#e1eff2;
+  --warn:#b8541f; --good:#16835a; --film:#b4531c; --film-bg:#fbeadf;
+  --display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans","IBM Plex Sans Arabic",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f161b; --surface:#172129; --ink:#e7edf1; --muted:#93a3ae; --line:#26333d; --accent:#5cc3d6; --accent-bg:#17343b;
+    --warn:#f09a63; --good:#5fd6a2; --film:#ffa36b; --film-bg:#3a2416; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f161b; --surface:#172129; --ink:#e7edf1; --muted:#93a3ae; --line:#26333d; --accent:#5cc3d6; --accent-bg:#17343b;
+  --warn:#f09a63; --good:#5fd6a2; --film:#ffa36b; --film-bg:#3a2416; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+[hidden]{display:none!important}
+
+/* ----- shell ----- */
+.app{display:grid;grid-template-columns:210px 1fr 320px;min-height:100%}
+.app.nav-c{grid-template-columns:44px 1fr 320px}
+.app.panel-c{grid-template-columns:210px 1fr 44px}
+.app.nav-c.panel-c{grid-template-columns:44px 1fr 44px}
+.app.no-panel{grid-template-columns:210px 1fr}
+.app.nav-c.no-panel,.app.nav-c.panel-c.no-panel{grid-template-columns:44px 1fr}
+.app.panel-c.no-panel{grid-template-columns:210px 1fr}
+.app.no-panel aside.panel{display:none}
+nav.side{border-right:1px solid var(--line);padding:16px 14px;display:flex;flex-direction:column;background:var(--surface)}
+.sidebody{display:flex;flex-direction:column;gap:3px;flex:1}
+.brand{font:700 17px/1.2 var(--display);margin:0 6px 16px}
+.brand small{display:block;font:500 12px var(--body);color:var(--muted);margin-top:3px}
+.navitem{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none}
+.navitem:hover{background:var(--bg);color:var(--ink)}
+.navitem.active{background:var(--accent-bg);color:var(--ink);font-weight:600}
+.count{font-size:11px;font-weight:600;background:var(--film);color:var(--surface);border-radius:99px;padding:0 7px}
+.side .foot{margin-top:auto;font-size:12px;color:var(--muted);padding:12px 6px 0;display:flex;flex-direction:column;gap:10px}
+.side label{display:block;margin-bottom:4px}
+.side input[type=date],.side select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.ctog{align-self:flex-end;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:28px;height:28px;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;margin-bottom:6px;flex:none}
+.ctog:hover{color:var(--ink);border-color:var(--muted)}
+aside.panel .ctog{float:right;margin:0 0 6px 8px}
+.app.nav-c nav.side{padding:14px 7px}
+.app.nav-c .sidebody,.app.panel-c #panelBody{display:none}
+.app.panel-c aside.panel{padding:14px 7px}
+.app.panel-c aside.panel .ctog{float:none}
+.tabs{display:none;gap:4px;overflow-x:auto;margin:0 0 14px;padding-bottom:2px;align-items:center}
+.tabs a{flex:none;padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);text-decoration:none;color:var(--muted);font-size:14px}
+.tabs a.active{background:var(--accent-bg);color:var(--ink);border-color:transparent;font-weight:600}
+.tabs select{flex:none;margin-left:auto;border:1px solid var(--line);border-radius:99px;padding:5px 8px;background:var(--surface);font-size:13px}
+
+main{padding:22px 26px 40px;min-width:0}
+.view{display:none}.view.on{display:block}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px}
+.top .grow{flex:1}
+h1{font:600 24px/1.2 var(--display);margin:0;text-wrap:balance}
+h2{font:600 17px/1.3 var(--display);margin:0 0 10px;text-wrap:balance}
+.lead{color:var(--muted);margin:-8px 0 18px;max-width:68ch}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:500}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.big{padding:11px 18px;font-size:16px}
+.btn.danger{color:var(--warn)}
+.navbtns{display:flex;gap:6px}
+.status{font-size:12px;color:var(--muted);margin:0}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.sec{margin-bottom:26px;max-width:860px}
+.sec h2{display:flex;align-items:center;gap:8px}
+
+/* ----- who switch ----- */
+.eyebrow{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 6px 6px}
+.who{display:flex;flex-direction:column;gap:3px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+.whoopt{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:10px;padding:7px 8px;cursor:pointer;text-align:left;color:var(--muted)}
+.whoopt:hover{color:var(--ink)}
+.whoopt.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.whoopt b{display:block;font-weight:600;font-size:14.5px;line-height:1.2}
+.whoopt small{display:block;font-size:12px;color:var(--muted)}
+.av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:600 14px var(--display);color:#fff;background:var(--avc);opacity:.45}
+.whoopt.on .av{opacity:1}
+.av.umar{--avc:#0f5c6e}.av.khalid{--avc:#b4531c}
+.whoopt .tick{margin-left:auto;color:var(--accent);font-weight:700;visibility:hidden}
+.whoopt.on .tick{visibility:visible}
+.addbtn{margin:0 0 14px;width:100%}
+.me{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:left}
+.me:hover{border-color:var(--muted)}
+.me b{display:block;font-weight:600;font-size:14.5px;color:var(--ink);line-height:1.2}
+.me small{display:block;font-size:12px;color:var(--muted)}
+.me .chev{margin-left:auto;color:var(--muted);font-size:12px}
+.me .av,.memenu .av{opacity:1}
+.memenu{position:fixed;z-index:60;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:6px}
+.memenu .lab{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px 4px}
+.memenu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;border-radius:8px;padding:8px;cursor:pointer;text-align:left}
+.memenu button:hover,.memenu button:focus-visible{background:var(--bg)}
+.memenu b{display:block;font-weight:600}
+.memenu small{display:block;font-size:12px;color:var(--muted)}
+.meav{flex:none;border:0;background:none;padding:0;margin-left:auto;cursor:pointer;border-radius:50%}
+.meav .av{opacity:1;width:32px;height:32px}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.quick button{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:4px 10px;font-size:12.5px;cursor:pointer}
+.quick button:hover{border-color:var(--muted)}
+.grp{margin-bottom:22px;max-width:860px}
+.grp h2{display:flex;align-items:center;gap:8px;font-size:15px}
+.grp h2 .n{font:500 12px var(--body);color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:0 8px}
+details.fold{max-width:860px;margin-bottom:14px}
+details.fold summary{cursor:pointer;font:600 15px var(--display);padding:6px 0;color:var(--muted)}
+details.fold[open] summary{margin-bottom:8px}
+.whomini{display:inline-flex;flex:none;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px;gap:2px;margin-right:6px}
+.whomini button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:99px;padding:3px 10px 3px 3px;cursor:pointer;color:var(--muted);font-size:13.5px}
+.whomini button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.whomini .av{width:24px;height:24px;font-size:11px}
+.tabs .addmini{background:var(--accent);color:var(--surface);border-color:var(--accent);font-weight:600}
+
+/* ----- add sheet ----- */
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 16px}
+.choice button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;text-align:left}
+.choice button:hover{border-color:var(--muted)}
+.choice button[aria-checked="true"]{border-color:var(--accent);background:var(--accent-bg)}
+.choice b{font-weight:600}
+.choice small{font-size:12px;color:var(--muted)}
+.checkic{display:inline-grid;place-items:center;width:20px;height:16px;border:1.5px solid var(--muted);border-radius:4px;font-size:11px;color:var(--muted);font-weight:700}
+.segfull{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.segfull button{flex:1;border:0;background:var(--surface);padding:8px;cursor:pointer;color:var(--muted)}
+.segfull button[aria-pressed="true"]{background:var(--accent-bg);color:var(--ink);font-weight:600}
+.field textarea{min-height:110px;resize:vertical}
+
+/* ----- checkable rows ----- */
+.crow{display:flex;align-items:center;gap:12px}
+.crow .vrow{flex:1;min-width:0}
+.bigcheck{flex:none;width:24px;height:24px;margin:0;accent-color:var(--good);cursor:pointer}
+.crow.done .vrow{opacity:.55}.crow.done .vrow .t{text-decoration:line-through}
+
+/* ----- generic posting slots ----- */
+.ev.slot .pt{font-weight:600}
+.ev.open{background:transparent;border:1px dashed var(--line)}
+.ev.opt .pt{font-style:italic;color:var(--muted)}
+.slothead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:600;font-size:14px;margin:10px 0 6px}
+.slothead small{font-weight:400;color:var(--muted)}
+.openslot{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ----- badges & pills ----- */
+.pl{display:inline-block;font:700 10px/1.4 var(--body);letter-spacing:.03em;padding:0 5px;border-radius:4px;border:1.5px solid var(--pc);color:var(--pc);background:transparent}
+.pl.on{background:var(--pc);color:var(--pcf)}
+.p-yt{--pc:#d22f27;--pcf:#fff}.p-ig{--pc:#c1358f;--pcf:#fff}.p-tt{--pc:var(--ink);--pcf:var(--surface)}.p-sc{--pc:#d8b400;--pcf:#1a1a1a}
+.plats{display:inline-flex;flex-wrap:wrap;gap:3px}
+.st{display:inline-block;font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 9px;white-space:nowrap;border:1px solid currentColor;color:var(--muted)}
+.st.s1{color:var(--warn)} .st.s2{color:var(--film)} .st.s3{color:var(--accent)} .st.s4{color:#7a4fc0} .st.s5{color:var(--good)}
+.kind{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+
+/* ----- video rows / cards ----- */
+.rows{display:flex;flex-direction:column;gap:8px}
+.vrow{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.vrow:hover{border-color:var(--muted)}
+.vrow .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.vrow .t{font-weight:600;font-size:15.5px;overflow-wrap:anywhere}
+.vrow .m{font-size:13px;color:var(--muted)}
+.vrow .go{color:var(--muted);font-size:18px}
+.vrow.film{border-left:4px solid var(--film)}
+.hero{display:flex;flex-direction:column;gap:8px}
+.hero .vrow{padding:16px 18px}
+.hero .vrow .t{font-size:18px}
+
+/* ----- board ----- */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px;align-items:start}
+.col{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.colhead{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13.5px;padding:2px 4px 4px}
+.colhead span{color:var(--muted);font-weight:500}
+.bcard{display:flex;flex-direction:column;gap:5px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;cursor:pointer}
+.bcard:hover{border-color:var(--muted);background:var(--surface)}
+.bcard .t{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.bcard .m{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-bg);color:var(--ink);font-weight:600}
+
+/* ----- calendar ----- */
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);gap:1px}
+.dow{background:var(--surface);padding:8px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.day{background:var(--surface);min-height:104px;padding:7px;border:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.day:hover{background:var(--bg)}
+.day.out{opacity:.45}
+.day.sel{box-shadow:inset 0 0 0 2px var(--accent)}
+.day .num{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.day.today .num b{background:var(--accent);color:var(--surface);border-radius:99px;padding:0 7px}
+.ev{display:flex;flex-direction:column;gap:2px;padding:4px 5px;border-radius:6px;background:var(--bg);font-size:12px;line-height:1.25}
+.ev .pt{font-weight:500;overflow-wrap:anywhere}
+.ev.done{opacity:.5}.ev.done .pt{text-decoration:line-through}
+.ev.filming{background:var(--film-bg)}
+.ev.filming .lbl{font-size:10px;font-weight:700;color:var(--film);text-transform:uppercase;letter-spacing:.05em}
+.pop{position:fixed;z-index:20;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px;pointer-events:none;font-size:13px}
+.pop h4{margin:0 0 8px;font:600 14px var(--display)}
+.pop ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.pop small{color:var(--muted)}
+.pop li{display:flex;flex-direction:column;gap:2px}
+aside.panel{border-left:1px solid var(--line);background:var(--surface);padding:20px 18px;overflow:auto}
+.panel h2{font-size:18px;margin:0 0 12px}
+.panel h3{font:600 12px var(--body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px}
+.panel .vrow{padding:10px 12px}
+.panel .vrow .t{font-size:14.5px}
+
+/* ----- video page ----- */
+.back{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;margin-bottom:12px;font-size:14px}
+.vhead{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:6px;max-width:860px}
+.vhead h1{font-size:26px;overflow-wrap:anywhere}
+.vmeta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:14px;margin:6px 0 18px;max-width:860px}
+.vmeta b{color:var(--ink);font-weight:500}
+.vhead select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-weight:500}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center}
+.filmed{color:var(--good);font-weight:600}
+.script{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 26px;max-width:860px}
+.script .sh{font:600 13px var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin:18px 0 6px}
+.script .sh:first-child{margin-top:0}
+.script p{margin:0 0 6px;font-size:17px;line-height:1.6;max-width:68ch;white-space:pre-wrap}
+.script mark{background:var(--film-bg);color:inherit;border-radius:3px;padding:0 2px}
+.scriptbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;max-width:860px}
+.scriptedit textarea{width:100%;min-height:420px;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface);font-size:15px;line-height:1.55;resize:vertical}
+.tip{font-size:13px;color:var(--muted);margin:8px 0 0}
+.related{max-width:860px;margin-top:22px}
+.ticks{display:flex;flex-wrap:wrap;gap:8px 16px}
+.pc{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+.pc input{width:15px;height:15px;margin:0;accent-color:var(--accent)}
+
+/* ----- tasks ----- */
+.taskadd{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;max-width:860px}
+.taskadd input[type=text]{flex:1;min-width:220px}
+.taskadd input,.taskadd select,.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface)}
+.tlist{display:flex;flex-direction:column;gap:6px;max-width:860px}
+.task{display:grid;grid-template-columns:20px 1fr auto auto auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.task input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.task .who{font-size:12px;color:var(--muted)}
+.task .due{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.task .due.late{color:var(--warn);font-weight:600}
+.task .vlink{grid-column:2/-1;font-size:12.5px;margin-top:-4px}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:2px 5px;border-radius:4px}
+.x:hover{color:var(--ink);background:var(--bg)}
+.subhead{font:600 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px}
+
+/* ----- form sheet ----- */
+.overlay{position:fixed;inset:0;background:rgba(10,20,26,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:50;overflow:auto}
+.sheet{background:var(--surface);border-radius:14px;width:min(560px,100%);padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.sheet h2{font-size:19px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label,.field .lab{font-size:13px;font-weight:600}
+.sheet .foot{display:flex;justify-content:space-between;gap:8px;margin-top:18px}
+.sheet .foot div{display:flex;gap:8px}
+
+/* ----- reference pages ----- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;max-width:1100px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card.wide{grid-column:1/-1}
+.card h2{font-size:16px}
+.card p{margin:0 0 8px;max-width:68ch}
+.card ul,.card ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.card li b{font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.wrap-x{overflow-x:auto}
+.funnel{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.funnel span{background:var(--accent-bg);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:500}
+.funnel i{color:var(--muted);font-style:normal}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:13px}
+.metric{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--line)}
+.metric:last-child{border:0}
+.metric b{font-weight:600}
+.metric span{font-size:13px;color:var(--muted)}
+.optl{font:500 11px var(--body);color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 7px}
+
+@media (max-width:1100px){
+  nav.side{display:none}
+  .tabs{display:flex}
+  .app,.app.nav-c{grid-template-columns:1fr 300px}
+  .app.panel-c,.app.nav-c.panel-c{grid-template-columns:1fr 44px}
+  .app.no-panel,.app.nav-c.no-panel,.app.panel-c.no-panel,.app.nav-c.panel-c.no-panel{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .app,.app.nav-c,.app.panel-c,.app.nav-c.panel-c{grid-template-columns:1fr}
+  main{padding:14px 16px 32px}
+  aside.panel{border-left:0;border-top:1px solid var(--line)}
+  .day{min-height:58px;padding:5px}
+  .ev .pt{display:none}.ev{padding:2px 4px}
+  .dow{padding:6px 4px;font-size:10px}
+  .script{padding:16px}
+  .fgrid{grid-template-columns:1fr}
+  .task{grid-template-columns:20px 1fr auto auto}
+  .task .who{display:none}
+}
+@media (prefers-reduced-motion:no-preference){.day,.btn,.vrow,.bcard{transition:background .12s,border-color .12s}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <nav class="side" aria-label="Sections">
+    <button type="button" class="ctog" id="navToggle" aria-expanded="true" aria-controls="sideBody" aria-label="Collapse left sidebar" title="Collapse left sidebar">«</button>
+    <div class="sidebody" id="sideBody">
+      <div class="brand">IFA Content<small>Madinah · personal trainer course</small></div>
+      <button class="btn primary addbtn" type="button" data-act="add">+ Add</button>
+      <div id="navLinks" style="display:flex;flex-direction:column;gap:3px"></div>
+      <div class="foot">
+        <div id="launchWrap"><label for="launch">Launch day</label><input type="date" id="launch"></div>
+        <p id="saveStatus" class="status">Loading…</p>
+        <button type="button" class="me" id="meBtn" data-act="me" aria-haspopup="menu" aria-expanded="false"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+
+    <section class="view" id="v-today"></section>
+
+    <section class="view" id="v-calendar">
+      <div class="top">
+        <h1 id="monthTitle">Calendar</h1>
+        <div class="navbtns">
+          <button class="btn" id="prev" type="button" aria-label="Previous month">‹</button>
+          <button class="btn" id="todayBtn" type="button">Today</button>
+          <button class="btn" id="next" type="button" aria-label="Next month">›</button>
+        </div>
+        <span class="grow"></span>
+        <button class="btn" type="button" data-act="add">+ Add</button>
+      </div>
+      <div class="grid" id="grid" role="grid" aria-label="Content calendar"></div>
+    </section>
+
+    <section class="view" id="v-ready"></section>
+    <section class="view" id="v-videos"></section>
+    <section class="view" id="v-video"></section>
+
+    <section class="view" id="v-tasks">
+      <div class="top"><h1>Tasks</h1><span class="grow"></span><div class="seg" id="taskFilter" role="group" aria-label="Whose tasks"></div><button class="btn primary" type="button" data-act="add-task" id="addTaskBtn">+ Add task</button></div>
+      <div id="tasks"></div>
+    </section>
+
+    <section class="view" id="v-templates">
+      <div class="top"><h1>Templates</h1></div>
+      <p class="lead">The formats every week runs on. "Plan next week" uses these to create the week's videos.</p>
+      <div class="cards" id="tplCards"></div>
+    </section>
+
+    <section class="view" id="v-strategy">
+      <div class="top"><h1>Strategy</h1></div>
+      <p class="lead">The brief for the Madinah launch: who it's for, how content leads to the course, and how results are measured.</p>
+      <div class="cards">
+        <div class="card"><h2>My role</h2><p>Content strategist and filmmaker for the Madinah launch. I plan, script, film, edit and post, and report results each month.</p></div>
+        <div class="card"><h2>The brand</h2><p>A personal trainer's brand already running in Qatar and Bahrain, now launching in Madinah.</p><p><b>Main product:</b> an evergreen course that trains personal trainers: getting clients, pricing, keeping clients and coaching skills.</p></div>
+        <div class="card"><h2>Other offers</h2><p class="status" style="margin:0 0 8px">Some still being planned</p><div class="chips"><span>Templates</span><span>Paid community</span><span>Group coaching</span><span>1:1 calls</span><span>In-person workshops</span><span>Staff training for gyms</span></div></div>
+        <div class="card"><h2>Audience</h2><ul><li><b>Personal trainers:</b> aspiring, new (0–2 years) and working. Not general gym-goers.</li><li><b>Wider reach:</b> people who could become trainers (gym lovers, career changers), other coaches, gym owners.</li></ul><p style="margin-top:10px">Every piece should make a trainer think "that's me."</p></div>
+        <div class="card wide"><h2>Funnel</h2><div class="funnel"><span>Shorts (reach)</span><i>→</i><span>Long YouTube videos (trust)</span><i>→</i><span>Free masterclass (email signup)</span><i>→</i><span>5–7 email sequence</span><i>→</i><span>Course</span></div></div>
+        <div class="card"><h2>Content pillars</h2><div class="chips"><span>Craft</span><span>Business</span><span>Mistakes &amp; myths</span><span>Proof (graduate stories)</span><span>Behind the scenes</span><span>Wider reach</span></div></div>
+        <div class="card"><h2>Output</h2><ul><li><b>YouTube is the main engine:</b> 1 long video a week, 8–15 min, titled around what trainers search for.</li><li><b>3–5 shorts a week</b> cut from the long video, on Instagram, TikTok and Snapchat.</li></ul></div>
+        <div class="card"><h2>Language &amp; cultural fit</h2><ul><li>Spoken in Saudi or Hijazi Arabic. No on-screen Arabic text.</li><li>Modest filming.</li><li>No-music edits as an option.</li><li>Post around prayer times.</li><li>A plan for Ramadan <span class="st s1">To plan</span></li></ul></div>
+        <div class="card"><h2>Success</h2><div class="metric"><b>Signups per video</b><span>Masterclass email signups each video brings in</span></div><div class="metric"><b>Masterclass watch time</b><span>How much of the masterclass people watch</span></div><div class="metric"><b>Course sales</b><span>The end goal</span></div><p class="status" style="margin-top:8px">Not views.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="panel" id="panel"><button type="button" class="ctog" id="panelToggle" aria-expanded="true" aria-controls="panelBody" aria-label="Collapse day panel" title="Collapse day panel">»</button><div id="panelBody" aria-live="polite"></div></aside>
+</div>
+<div class="pop" id="pop" hidden></div>
+<div class="overlay" id="overlay" hidden></div>
+<div class="memenu" id="meMenu" role="menu" hidden></div>
+
+<script>
+/* ================= constants ================= */
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WEEK_START = 6; // Saturday
+const DEFAULT_LAUNCH = "2026-11-28";
+const PEOPLE = { umar:"Umar", khalid:"Khalid" };
+const QUICK = {
+  khalid: ["Fill in the [brackets] for this script","Approve this script","Record this video","Review the final edit","Send a graduate story or contact","Get permission to film at the gym","Send the masterclass link","Share account logins"],
+  umar:   ["Write script","Edit video","Cut shorts from this video","Thumbnail and description","Post and tick platforms","Check signups and watch time","Monthly report"]
+};
+const TOPICS = ["Training tips","Gym habits & myths","Khalid's story","Gym-floor questions","Trainer life & IFA","Other"];
+const ROLE_NOTE = { umar:"Content", khalid:"Trainer" };
+const NAV = {
+  umar:   [["today","Today"],["calendar","Calendar"],["videos","Videos"],["tasks","Tasks"],["templates","Templates"],["strategy","Strategy"]],
+  khalid: [["today","Today"],["calendar","Calendar"],["ready","Ready to film"],["tasks","Tasks"]]
+};
+const ALL_VIEWS = ["today","calendar","ready","videos","video","tasks","templates","strategy"];
+const PLATFORMS = { yt:{label:"YouTube", short:"YT"}, ig:{label:"Instagram", short:"IG"}, tt:{label:"TikTok", short:"TT"}, sc:{label:"Snapchat", short:"SC"} };
+const PLAT_ORDER = ["yt","ig","tt","sc"];
+const SHORT_PLATS = ["ig","tt","sc"];
+const STATUSES = ["Idea","Scripting","Ready to film","Filmed","Editing","Posted"];
+const S = { IDEA:0, SCRIPTING:1, READY:2, FILMED:3, EDITING:4, POSTED:5 };
+const PILLARS = ["Business: getting clients","Craft: coaching skills","Mistakes & myths","Business: pricing","Proof: graduate story","Business: keeping clients","Wider reach: becoming a trainer","Behind the scenes"];
+const pillarOf = n => PILLARS[(n-1) % PILLARS.length];
+const LONG_SCRIPT = `Hook (first 30s)
+-
+
+Credibility
+-
+
+Main points (3–5, each with a real example)
+1.
+2.
+3.
+
+Proof
+- [graduate result or real numbers]
+
+CTA
+- Free masterclass:
+
+Moments to cut as shorts
+- `;
+const SHORT_SCRIPT = `Hook (first 2s)
+-
+
+One point
+-
+
+Payoff
+-
+
+CTA
+- `;
+const HEADINGS = ["body","format","credibility","main points","points","proof","cta","call to action","moments","one point","payoff","notes","shoot notes","intro","outro","b-roll","title"];
+// Weekly slots used by "Plan next week"
+const SLOTS = [
+  {slot:"S1", name:"Myth-buster short", day:0, when:"After Isha", fromPrev:true},
+  {slot:"S2", name:"Quick-tip short", day:2, when:"After Isha", fromPrev:true},
+  {slot:"L",  name:"Long video", day:4, when:"After Asr", film:1},
+  {slot:"S3", name:"Story short", day:5, when:"After Isha"},
+  {slot:"S4", name:"Behind-the-scenes short", day:6, when:"After Maghrib", film:1}
+];
+
+/* ================= state ================= */
+const state = {
+  launch: DEFAULT_LAUNCH, videos:{}, tasks:{},
+  role:"umar", view:"today", prevView:"today", videoSel:null, editing:false,
+  month:null, sel:null, board:"status", taskWho:"mine",
+  db:null, readOnly:false
+};
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseKey = k => { const [y,m,d] = k.split("-").map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const dayDiff = (a,b) => Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()) - Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/864e5);
+const todayKey = () => keyOf(new Date());
+const fmtLong = k => parseKey(k).toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long"});
+const fmtShort = k => k ? parseKey(k).toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short"}) : "";
+const rel = k => { const n = dayDiff(parseKey(todayKey()), parseKey(k)); return n === 0 ? "today" : n === 1 ? "tomorrow" : n === -1 ? "yesterday" : n > 0 ? `in ${n} days` : `${-n} days ago`; };
+const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const isUmar = () => state.role === "umar";
+
+const videoList = () => Object.entries(state.videos).map(([id,v]) => ({id, ...v}));
+const vget = id => state.videos[id] ? {id, ...state.videos[id]} : null;
+const byPost = (a,b) => (a.post||"9999").localeCompare(b.post||"9999") || (a.title||"").localeCompare(b.title||"");
+const byFilm = (a,b) => (a.film||"9999").localeCompare(b.film||"9999") || byPost(a,b);
+const pill = s => `<span class="st s${s||0}">${STATUSES[s||0]}</span>`;
+const badges = v => `<span class="plats">${(v.plats||[]).map(p => `<span class="pl p-${p}${v.posted && v.posted[p] ? " on" : ""}" title="${PLATFORMS[p].label}">${PLATFORMS[p].short}</span>`).join("")}</span>`;
+const kindLabel = v => v.kind === "long" ? "Long video" : "Short";
+const childrenOf = id => videoList().filter(v => v.parent === id).sort(byPost);
+const needsFilming = v => !!v.film && (v.status||0) < S.FILMED;
+
+/* ================= script rendering ================= */
+function renderScriptText(txt){
+  if (!txt || !txt.trim()) return `<p class="empty">No script yet.</p>`;
+  const out = []; let para = [];
+  const flush = () => { if (para.length){ out.push(`<p dir="auto">${para.join("\n")}</p>`); para = []; } };
+  txt.replace(/\r/g,"").split("\n").forEach(raw => {
+    const line = raw.trimEnd();
+    const bare = line.replace(/^#+\s*/,"").replace(/[:：]\s*$/,"").trim();
+    const isHead = line.trim() && (/^#/.test(line) || (/[:：]\s*$/.test(line) && bare.length < 50) || HEADINGS.some(h => bare.toLowerCase() === h || (bare.toLowerCase().startsWith(h) && bare.length < 50 && /^[^-•\d]/.test(bare))));
+    if (!line.trim()){ flush(); return; }
+    if (isHead){ flush(); out.push(`<div class="sh" dir="auto">${esc(bare)}</div>`); return; }
+    if (/^[-•]\s*$/.test(line.trim()) || /^\d+\.\s*$/.test(line.trim())) return; // empty template bullet
+    para.push(esc(line).replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>"));
+  });
+  flush();
+  return out.join("") || `<p class="empty">No script yet.</p>`;
+}
+
+/* ================= navigation ================= */
+function renderNav(){
+  const ready = videoList().filter(v => (v.status||0) === S.READY).length;
+  const items = NAV[state.role];
+  const link = ([v,label], cls) => `<a class="${cls}" href="#${v}" data-v="${v}">${label}${v === "ready" && ready ? `<span class="count">${ready}</span>` : ""}</a>`;
+  $("navLinks").innerHTML = items.map(i => link(i, "navitem")).join("");
+  const me = state.role;
+  $("meBtn").innerHTML = `<span class="av ${me}">${PEOPLE[me][0]}</span><span><b>${PEOPLE[me]}</b><small>${ROLE_NOTE[me]}</small></span><span class="chev" aria-hidden="true">⇅</span>`;
+  $("meBtn").setAttribute("aria-label", `Viewing as ${PEOPLE[me]}. Switch profile`);
+  $("tabs").innerHTML = items.map(i => link(i, "")).join("") + (state.readOnly ? "" : `<a href="#" class="addmini" data-act="add">+ Add</a>`) + `<button type="button" class="meav" data-act="me" aria-haspopup="menu" aria-label="Viewing as ${PEOPLE[me]}. Switch profile"><span class="av ${me}">${PEOPLE[me][0]}</span></button>`;
+  const cur = state.view === "video" ? state.prevView : state.view;
+  document.querySelectorAll("[data-v]").forEach(a => { const on = a.dataset.v === cur; a.classList.toggle("active", on); if (on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  document.querySelectorAll(".umar-only").forEach(el => el.hidden = !isUmar() || state.readOnly);
+  $("launchWrap").hidden = !isUmar();
+}
+function go(view){
+  if (!ALL_VIEWS.includes(view)) view = "today";
+  if (view === "video" && !vget(state.videoSel)) view = state.prevView || "today";
+  if (view !== "video") state.prevView = view;
+  state.view = view;
+  ALL_VIEWS.forEach(x => $("v-"+x).classList.toggle("on", x === view));
+  $("app").classList.toggle("no-panel", view !== "calendar");
+  pop.hidden = true;
+  renderNav(); renderView();
+  window.scrollTo(0,0);
+}
+function openVideo(id){
+  state.videoSel = id; state.editing = false;
+  if (location.hash === "#video") go("video"); else location.hash = "video";
+}
+function renderView(){
+  const v = state.view;
+  if (v === "today") renderToday();
+  if (v === "calendar"){ renderGrid(); renderPanel(); }
+  if (v === "ready") renderReady();
+  if (v === "videos") renderBoard();
+  if (v === "video") renderVideo();
+  if (v === "tasks") renderTasks();
+  if (v === "templates") renderTemplates();
+}
+addEventListener("hashchange", () => go(location.hash.slice(1)));
+
+/* ================= rows ================= */
+function vrow(v, mode){
+  let meta;
+  if (mode === "film") meta = `${kindLabel(v)}${v.film ? ` · film ${rel(v.film)}` : ""}${v.post ? ` · posts ${fmtShort(v.post)}` : ""}`;
+  else if (mode === "post") meta = `${v.when ? v.when + " · " : ""}${kindLabel(v)}`;
+  else meta = `${kindLabel(v)}${v.film ? ` · film ${fmtShort(v.film)}` : ""}${v.post ? ` · posts ${fmtShort(v.post)}` : ""}`;
+  return `<button type="button" class="vrow${mode === "film" ? " film" : ""}" data-open="${esc(v.id)}">
+    <span class="main"><span class="t" dir="auto">${esc(v.title)}</span><span class="m">${esc(meta)}</span></span>
+    ${mode === "post" ? badges(v) : pill(v.status)}<span class="go" aria-hidden="true">›</span></button>`;
+}
+function taskRows(list){
+  const tk = todayKey();
+  return `<div class="tlist">${list.map(t => `<div class="task${t.done?" done":""}">
+    <input type="checkbox" data-task="${esc(t.id)}" aria-label="Done: ${esc(t.text)}" ${t.done?"checked":""} ${state.readOnly?"disabled":""}>
+    <span class="tt" dir="auto">${esc(t.text)}</span>
+    <span class="who">${esc(PEOPLE[t.who] || "")}</span>
+    <span class="due${t.due && !t.done && t.due < tk ? " late" : ""}">${t.due ? esc(fmtShort(t.due)) : ""}</span>
+    ${state.readOnly ? "<span></span>" : `<button type="button" class="x" data-deltask="${esc(t.id)}" aria-label="Delete task">×</button>`}
+    ${t.video && vget(t.video) ? `<a class="vlink" href="#video" data-open="${esc(t.video)}">${esc(vget(t.video).title)}</a>` : ""}
+  </div>`).join("")}</div>`;
+}
+const openTasksFor = who => Object.entries(state.tasks).map(([id,t]) => ({id,...t})).filter(t => !t.done && (!who || t.who === who)).sort((a,b) => (a.due||"9999").localeCompare(b.due||"9999") || (a.created||0)-(b.created||0));
+
+function crow(v){
+  const done = (v.status||0) >= S.FILMED;
+  return `<div class="crow${done ? " done" : ""}"><input type="checkbox" class="bigcheck" data-filmed="${esc(v.id)}" aria-label="Filmed: ${esc(v.title)}" ${done ? "checked" : ""} ${state.readOnly ? "disabled" : ""}>${vrow(v,"film")}</div>`;
+}
+
+/* ================= Today ================= */
+function renderToday(){
+  const tk = todayKey(), vids = videoList();
+  let html = `<div class="top"><h1>${esc(fmtLong(tk))}</h1></div>`;
+  if (!isUmar()){
+    const today = vids.filter(v => v.film === tk && needsFilming(v)).sort(byPost);
+    const late = vids.filter(v => v.film && v.film < tk && needsFilming(v)).sort(byFilm);
+    const nextShoot = vids.filter(v => v.film && v.film > tk && needsFilming(v)).sort(byFilm)[0];
+    html += `<div class="sec"><h2>Film today</h2>${today.length ? `<div class="hero">${today.map(crow).join("")}</div>` : `<p class="empty">Nothing to film today.${nextShoot ? ` Next shoot: <b>${esc(fmtShort(nextShoot.film))}</b> (${esc(rel(nextShoot.film))}).` : ""}</p>`}</div>`;
+    if (late.length) html += `<div class="sec"><h2>Still to film</h2><div class="rows">${late.map(crow).join("")}</div></div>`;
+    const mine = openTasksFor("khalid");
+    html += `<div class="sec"><h2>Your tasks</h2>${mine.length ? taskRows(mine.slice(0,6)) : `<p class="empty">No tasks.</p>`}${mine.length > 6 ? `<p><a href="#tasks">See all ${mine.length}</a></p>` : ""}</div>`;
+    html += `<div class="sec"><p><a href="#ready">See all videos ready to film →</a></p></div>`;
+  } else {
+    if (!vids.length){
+      html += `<div class="sec"><h2>Start here</h2><p class="empty">No videos yet. Plan the first weeks from the weekly templates, then write each script.</p><button class="btn primary big" type="button" data-act="plan-4">Plan the first 4 weeks</button></div>`;
+    }
+    const posting = vids.filter(v => v.post === tk).sort(byPost);
+    if (vids.length) html += `<div class="sec"><h2>Posting today</h2>${posting.length ? `<div class="rows">${posting.map(v => vrow(v,"post")).join("")}</div>` : `<p class="empty">Nothing posting today.</p>`}</div>`;
+    const soon = keyOf(addDays(parseKey(tk), 10));
+    const toWrite = vids.filter(v => (v.status||0) <= S.SCRIPTING && ((v.film && v.film <= soon) || (!v.film && v.post && v.post <= soon))).sort((a,b) => (a.film||a.post).localeCompare(b.film||b.post));
+    if (vids.length) html += `<div class="sec"><h2>Scripts to finish</h2>${toWrite.length ? `<div class="rows">${toWrite.map(v => vrow(v)).join("")}</div>` : `<p class="empty">No scripts due in the next 10 days.</p>`}</div>`;
+    const toEdit = vids.filter(v => v.status === S.FILMED || v.status === S.EDITING).sort(byPost);
+    if (toEdit.length) html += `<div class="sec"><h2>To edit</h2><div class="rows">${toEdit.map(v => vrow(v)).join("")}</div></div>`;
+    const mine = openTasksFor("umar");
+    html += `<div class="sec"><h2>Your tasks</h2>${mine.length ? taskRows(mine.slice(0,6)) : `<p class="empty">No tasks.</p>`}${mine.length > 6 ? `<p><a href="#tasks">See all ${mine.length}</a></p>` : ""}</div>`;
+  }
+  $("v-today").innerHTML = html;
+}
+
+/* ================= Ready to film (Khalid) ================= */
+function topicOf(v){
+  if (v.topic && TOPICS.includes(v.topic)) return v.topic;
+  if (v.kind === "long") return "Trainer life & IFA";
+  return "Other";
+}
+function readyRow(v){
+  const done = (v.status||0) >= S.FILMED;
+  const meta = `${v.kind === "long" ? "YouTube video" : "Short"}${v.film ? ` · record ${rel(v.film)}` : ""}`;
+  return `<div class="crow${done ? " done" : ""}"><input type="checkbox" class="bigcheck" data-filmed="${esc(v.id)}" aria-label="Filmed: ${esc(v.title)}" ${done ? "checked" : ""} ${state.readOnly ? "disabled" : ""}>
+    <button type="button" class="vrow film" data-open="${esc(v.id)}"><span class="main"><span class="t" dir="auto">${esc(v.title)}</span><span class="m">${esc(meta)}</span></span><span class="go" aria-hidden="true">›</span></button></div>`;
+}
+function renderReady(){
+  const f = state.readyFilter || "all";
+  const match = v => f === "all" || (f === "long" ? v.kind === "long" : v.kind !== "long");
+  const vids = videoList();
+  const readyAll = vids.filter(v => (v.status||0) === S.READY);
+  const ready = readyAll.filter(match);
+  const filmed = vids.filter(v => (v.status||0) === S.FILMED && match(v)).sort((a,b) => (b.filmedAt||0) - (a.filmedAt||0)).slice(0,15);
+  const coming = vids.filter(v => (v.status||0) < S.READY && match(v)).sort(byFilm).slice(0,10);
+  // Group by what the content is about
+  const groups = TOPICS.map(t => [t, []]);
+  ready.sort((a,b) => (a.post||"9999").localeCompare(b.post||"9999")).forEach(v => {
+    const g = groups.find(x => x[0] === topicOf(v)) || groups[groups.length-1]; g[1].push(v);
+  });
+  const cnt = k => readyAll.filter(v => k === "all" || (k === "long" ? v.kind === "long" : v.kind !== "long")).length;
+  $("v-ready").innerHTML = `<div class="top"><h1>Ready to film</h1><span class="grow"></span>
+      <div class="seg" role="group" aria-label="Show">${[["all","All"],["short","Shorts"],["long","YouTube"]].map(([k,l]) => `<button type="button" data-rf="${k}" aria-pressed="${f===k}">${l} ${cnt(k)}</button>`).join("")}</div></div>
+    <p class="lead">Grouped by topic. Tap a script to read it, tick it once it's recorded.</p>
+    ${ready.length ? groups.filter(g => g[1].length).map(([t,list]) => `<div class="grp"><h2>${t}<span class="n">${list.length}</span></h2><div class="rows">${list.map(readyRow).join("")}</div></div>`).join("")
+      : `<p class="empty">Nothing left to film${f !== "all" ? " here" : ""}. Umar will add scripts when they're done.</p>`}
+    ${filmed.length ? `<details class="fold"><summary>Filmed (${filmed.length})</summary><div class="rows">${filmed.map(readyRow).join("")}</div></details>` : ""}
+    ${coming.length ? `<details class="fold"><summary>Being written (${coming.length})</summary><div class="rows">${coming.map(v => vrow(v)).join("")}</div></details>` : ""}`;
+}
+
+/* ================= Videos board (Umar) ================= */
+function renderBoard(){
+  const vids = videoList().sort(byPost);
+  let html = `<div class="top"><h1>Videos</h1><span class="grow"></span>
+    <div class="seg" role="group" aria-label="Group videos"><button type="button" data-board="status" aria-pressed="${state.board==="status"}">By status</button><button type="button" data-board="week" aria-pressed="${state.board==="week"}">By week</button></div>
+    ${state.readOnly ? "" : `<button class="btn" type="button" data-act="plan-next">Plan next week</button><button class="btn primary" type="button" data-act="add-long">+ New video</button>`}</div>`;
+  if (!vids.length){ html += `<p class="empty">No videos yet.</p>${state.readOnly ? "" : `<button class="btn primary big" type="button" data-act="plan-4">Plan the first 4 weeks</button>`}`; $("v-videos").innerHTML = html; return; }
+  const card = v => `<button type="button" class="bcard" data-open="${esc(v.id)}"><span class="kind">${kindLabel(v)}</span><span class="t" dir="auto">${esc(v.title)}</span><span class="m"><span>${v.post ? "Posts " + esc(fmtShort(v.post)) : "No post date"}</span>${state.board === "week" ? pill(v.status) : badges(v)}</span></button>`;
+  if (state.board === "status"){
+    html += `<div class="board">${STATUSES.map((s,i) => { const col = vids.filter(v => (v.status||0) === i); return `<div class="col"><div class="colhead">${s}<span>${col.length}</span></div>${col.map(card).join("")}</div>`; }).join("")}</div>`;
+  } else {
+    const groups = {};
+    vids.forEach(v => { const w = v.post ? Math.floor(dayDiff(parseKey(state.launch), parseKey(v.post))/7)+1 : 0; (groups[w] = groups[w] || []).push(v); });
+    html += `<div class="board">${Object.keys(groups).map(Number).sort((a,b)=>a-b).map(w => `<div class="col"><div class="colhead">${w < 1 ? "Before launch / no date" : `Week ${w}`}<span>${groups[w].length}</span></div>${groups[w].map(card).join("")}</div>`).join("")}</div>`;
+  }
+  $("v-videos").innerHTML = html;
+}
+
+/* ================= Video page ================= */
+function renderVideo(){
+  const v = vget(state.videoSel); if (!v) return;
+  const parent = v.parent ? vget(v.parent) : null, kids = childrenOf(v.id);
+  const canEdit = isUmar() && !state.readOnly;
+  let html = `<button type="button" class="back" data-act="back">‹ Back</button>
+    <div class="vhead"><div><span class="kind">${kindLabel(v)}</span><h1 dir="auto">${esc(v.title)}</h1></div>
+      ${canEdit ? `<select id="vStatus" aria-label="Status">${STATUSES.map((s,i) => `<option value="${i}" ${(v.status||0)===i?"selected":""}>${s}</option>`).join("")}</select>` : pill(v.status)}</div>
+    <div class="vmeta">
+      ${v.film ? `<span>Film <b>${esc(fmtShort(v.film))}</b></span>` : parent ? `<span>Cut from <a href="#video" data-open="${esc(parent.id)}">${esc(parent.title)}</a></span>` : ""}
+      ${v.post ? `<span>Posts <b>${esc(fmtShort(v.post))}</b>${v.when ? ", " + esc(v.when) : ""}</span>` : ""}
+      ${(v.plats||[]).length ? `<span>On ${badges(v)}</span>` : ""}
+      ${v.pillar ? `<span>${esc(v.pillar)}</span>` : ""}
+    </div>`;
+  // Khalid's main action
+  if (!isUmar() && v.film){
+    html += `<div class="actions">${(v.status||0) >= S.FILMED ? `<span class="filmed">✓ Filmed</span>${state.readOnly ? "" : `<button class="btn" type="button" data-act="unfilm">Undo</button>`}` : state.readOnly ? "" : `<button class="btn primary big" type="button" data-act="filmed">Mark as filmed</button>`}</div>`;
+  }
+  if (canEdit){
+    html += `<div class="actions"><button class="btn" type="button" data-act="edit-video">Edit details</button>${(v.plats||[]).length ? `<span class="ticks" aria-label="Posted on">${v.plats.map(p => `<label class="pc"><input type="checkbox" data-posted="${p}" ${v.posted && v.posted[p] ? "checked" : ""}><span class="pl p-${p}${v.posted && v.posted[p] ? " on" : ""}">${PLATFORMS[p].short}</span>Posted</label>`).join("")}</span>` : ""}</div>`;
+  }
+  // Script
+  html += `<div class="scriptbar"><h2 style="margin:0">Script</h2>${canEdit ? `<div class="navbtns">${state.editing
+      ? `<label class="btn" for="importFile">Import file</label><input type="file" id="importFile" accept=".txt,.md,text/plain,text/markdown" hidden>${!(v.script||"").trim() ? `<button class="btn" type="button" data-act="insert-tpl">Insert template</button>` : ""}<button class="btn primary" type="button" data-act="done-edit">Done</button>`
+      : `<button class="btn primary" type="button" data-act="edit-script">${(v.script||"").trim() ? "Edit script" : "Add script"}</button>`}</div>` : ""}</div>`;
+  if (state.editing && canEdit){
+    html += `<div class="scriptedit"><textarea id="scriptBox" dir="auto" aria-label="Script" placeholder="Paste the script here from Google Docs, Word or Notes. Lines like 'Hook' or 'CTA:' become headings, and [brackets] get highlighted.">${esc(v.script || "")}</textarea>
+      <p class="tip">Saves as you type. Outline only, delivered in his own words. Real stories and numbers go in [brackets]; never invent results.</p></div>`;
+  } else {
+    html += `<div class="script">${renderScriptText(v.script)}</div>`;
+  }
+  if (kids.length) html += `<div class="related"><h2>Shorts cut from this video</h2><div class="rows">${kids.map(k => vrow(k)).join("")}</div></div>`;
+  $("v-video").innerHTML = html;
+  if (state.editing){ const b = $("scriptBox"); if (b && !b.dataset.focused){ b.focus(); b.dataset.focused = "1"; } }
+}
+
+/* ================= Calendar ================= */
+// Posting days come from the weekly plan, whether or not a video is picked yet
+const SLOT_DAYS = { 6:{kind:"short",when:"After Isha"}, 1:{kind:"short",when:"After Isha"}, 3:{kind:"long",when:"After Asr"}, 4:{kind:"short",when:"After Isha"}, 5:{kind:"short",when:"After Maghrib",optional:true} };
+const slotName = s => s.kind === "long" ? "YouTube video" : "Short";
+const slotPlats = s => s.kind === "long" ? ["yt"] : SHORT_PLATS;
+function slotsFor(k){
+  const d = parseKey(k), out = [];
+  if (dayDiff(parseKey(state.launch), d) >= 0 && SLOT_DAYS[d.getDay()]) out.push({...SLOT_DAYS[d.getDay()], vids:[]});
+  videoList().filter(v => v.post === k).sort(byPost).forEach(v => {
+    const s = out.find(x => x.kind === v.kind && !x.vids.length);
+    if (s){ s.vids.push(v); if (v.when) s.when = v.when; } else out.push({kind:v.kind, when:v.when, vids:[v]});
+  });
+  return out.map(s => ({...s, done: s.vids.length > 0 && s.vids.every(v => v.status === S.POSTED)}));
+}
+const slotBadges = s => `<span class="plats">${slotPlats(s).map(p => `<span class="pl p-${p}${s.done ? " on" : ""}" title="${PLATFORMS[p].label}">${PLATFORMS[p].short}</span>`).join("")}</span>`;
+
+function renderGrid(){
+  const v = state.month;
+  $("monthTitle").textContent = v.toLocaleDateString("en-GB",{month:"long", year:"numeric"});
+  const first = new Date(v.getFullYear(), v.getMonth(), 1);
+  const lead = (first.getDay() - WEEK_START + 7) % 7, start = addDays(first, -lead), tk = todayKey();
+  const vids = videoList();
+  let html = "";
+  for (let i=0;i<7;i++) html += `<div class="dow" role="columnheader">${DOW[(WEEK_START+i)%7]}</div>`;
+  const cells = Math.ceil((lead + new Date(v.getFullYear(), v.getMonth()+1, 0).getDate())/7)*7;
+  for (let i=0;i<cells;i++){
+    const d = addDays(start,i), k = keyOf(d);
+    const films = vids.filter(x => x.film === k).sort(byPost), posts = slotsFor(k);
+    const cls = ["day", d.getMonth()!==v.getMonth()?"out":"", k===tk?"today":"", k===state.sel?"sel":""].join(" ");
+    const rows = films.map(x => `<span class="ev filming${(x.status||0) >= S.FILMED ? " done" : ""}"><span class="lbl">Film</span><span class="pt" dir="auto">${esc(x.title)}</span></span>`).join("")
+      + posts.map(s => `<span class="ev slot${s.done ? " done" : ""}${s.vids.length ? "" : " open"}${s.optional ? " opt" : ""}">${slotBadges(s)}<span class="pt">${slotName(s)}${s.optional ? " (optional)" : ""}</span></span>`).join("");
+    const label = `${fmtLong(k)}: ${films.length ? films.length + " to film, " : ""}${posts.length ? posts.length + " posting" : films.length ? "" : "nothing scheduled"}`;
+    html += `<button type="button" class="${cls}" data-k="${k}" aria-label="${esc(label)}"><span class="num"><b>${d.getDate()}</b></span>${rows}</button>`;
+  }
+  $("grid").innerHTML = html;
+}
+function renderPanel(){
+  const k = state.sel, vids = videoList();
+  const films = vids.filter(x => x.film === k).sort(byPost), posts = slotsFor(k);
+  const canAdd = !state.readOnly;
+  let html = `<h2>${esc(fmtLong(k))}</h2>`;
+  if (posts.length) html += `<h3>Posting</h3>` + posts.map(s => `<div class="slothead">${slotName(s)}${s.optional ? ` <span class="optl">Optional</span>` : ""} ${slotBadges(s)} <small>${esc(s.when || "")}</small></div>` +
+    (s.vids.length ? `<div class="rows">${s.vids.map(x => vrow(x)).join("")}</div>` : `<div class="openslot">No video picked yet${canAdd ? `<button class="btn" type="button" data-act="add-slot" data-kind="${s.kind}">Pick or add</button>` : ""}</div>`)).join("");
+  if (films.length) html += `<h3>Film</h3><div class="rows">${films.map(crow).join("")}</div>`;
+  if (!films.length && !posts.length) html += `<p class="empty">Nothing scheduled.</p>${canAdd ? `<button class="btn" type="button" data-act="add-day">+ Add on this day</button>` : ""}`;
+  $("panelBody").innerHTML = html;
+}
+const pop = $("pop"), canHover = matchMedia("(hover:hover)").matches;
+function showPop(cell){
+  const k = cell.dataset.k, vids = videoList();
+  const items = vids.filter(x => x.film === k).map(x => `<li><b>Film:</b> <span dir="auto">${esc(x.title)}</span></li>`)
+    .concat(slotsFor(k).map(s => `<li>${slotBadges(s)} ${slotName(s)}${s.optional ? " (optional)" : ""} <small>${esc(s.when||"")}</small>${s.vids.length ? `<small dir="auto">${esc(s.vids.map(v => v.title).join(", "))}</small>` : ""}</li>`));
+  if (!items.length){ pop.hidden = true; return; }
+  pop.innerHTML = `<h4>${esc(fmtLong(k))}</h4><ul>${items.join("")}</ul>`; pop.hidden = false;
+  const r = cell.getBoundingClientRect(), pw = 260, ph = pop.offsetHeight;
+  let x = r.right + 8; if (x + pw > innerWidth - 8) x = r.left - pw - 8; if (x < 8) x = 8;
+  let y = r.top; if (y + ph > innerHeight - 8) y = innerHeight - ph - 8; if (y < 8) y = 8;
+  pop.style.left = x+"px"; pop.style.top = y+"px";
+}
+
+/* ================= Tasks ================= */
+function renderTasks(){
+  const f = state.taskWho, me = state.role, other = me === "umar" ? "khalid" : "umar";
+  $("taskFilter").innerHTML = [["mine","Mine"],["other",`${PEOPLE[other]}'s`],["all","All"]].map(([k,l]) => `<button type="button" data-tw="${k}" aria-pressed="${f===k}">${l}</button>`).join("");
+  const who = f === "mine" ? me : f === "other" ? other : null;
+  const all = Object.entries(state.tasks).map(([id,t]) => ({id,...t})).filter(t => !who || t.who === who);
+  const open = all.filter(t => !t.done).sort((a,b) => (a.due||"9999").localeCompare(b.due||"9999") || (a.created||0)-(b.created||0));
+  const done = all.filter(t => t.done).sort((a,b) => (b.created||0)-(a.created||0)).slice(0,20);
+  $("addTaskBtn").hidden = state.readOnly;
+  $("tasks").innerHTML = (open.length ? taskRows(open) : `<p class="empty">No open tasks.</p>`) + (done.length ? `<div class="subhead">Done</div>${taskRows(done)}` : "");
+}
+
+/* ================= Templates ================= */
+function renderTemplates(){
+  const pl = ps => `<span class="plats">${ps.map(p => `<span class="pl p-${p} on">${PLATFORMS[p].short}</span>`).join("")}</span>`;
+  $("tplCards").innerHTML = `
+    <div class="card wide"><h2>Weekly plan</h2><div class="wrap-x"><table class="tbl"><thead><tr><th>Posts</th><th>Piece</th><th>Time</th><th>Platforms</th><th>Filmed</th></tr></thead><tbody>
+      <tr><td>Sat</td><td>Myth-buster short</td><td>After Isha</td><td>${pl(SHORT_PLATS)}</td><td>Cut from last week's video</td></tr>
+      <tr><td>Mon</td><td>Quick-tip short</td><td>After Isha</td><td>${pl(SHORT_PLATS)}</td><td>Cut from last week's video</td></tr>
+      <tr><td>Wed</td><td>Long video (8–15 min)</td><td>After Asr</td><td>${pl(["yt"])}</td><td>Sunday</td></tr>
+      <tr><td>Thu</td><td>Story short</td><td>After Isha</td><td>${pl(SHORT_PLATS)}</td><td>Cut from this week's video</td></tr>
+      <tr><td>Fri</td><td>Behind-the-scenes short <span class="optl">Optional</span></td><td>After Maghrib</td><td>${pl(SHORT_PLATS)}</td><td>Sunday, on set</td></tr>
+    </tbody></table></div></div>
+    <div class="card wide"><h2>Production rhythm</h2><div class="wrap-x"><table class="tbl"><thead><tr><th>Sat</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th></tr></thead><tbody><tr>
+      <td>Script ready, title picked</td><td>Khalid records the long video + extra hooks + BTS</td><td>Rough cut</td><td>Final cut, no-music version, thumbnail, description</td><td>Publish, then cut 4 shorts</td><td>Check signups from last video</td><td>Light day</td>
+    </tr></tbody></table></div></div>
+    <div class="card"><h2>Long video script</h2><div class="script" style="border:0;padding:0">${renderScriptText(LONG_SCRIPT)}</div><p class="status" style="margin-top:8px">Hook, credibility, 3–5 points with examples, proof, masterclass CTA, list of moments to cut.</p></div>
+    <div class="card"><h2>Short script</h2><div class="script" style="border:0;padding:0">${renderScriptText(SHORT_SCRIPT)}</div><p class="status" style="margin-top:8px">Hook in the first 2 seconds, one point, payoff, CTA.</p></div>
+    <div class="card"><h2>Pillar rotation</h2><p class="status" style="margin:0 0 8px">Suggested pillar for each week's long video, repeats every 8 weeks</p><ol>${PILLARS.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>
+    <div class="card"><h2>Monthly report</h2><p>Signups per video, masterclass watch time, course sales.</p></div>`;
+}
+
+/* ================= New / edit video sheet ================= */
+function openSheet(v, presetDay){
+  const editing = !!v;
+  v = v || { kind:"long", title:"", status:0, plats:["yt"], when:"After Asr", film: presetDay || "", post: presetDay || "", pillar:"" };
+  const longs = videoList().filter(x => x.kind === "long" && x.id !== v.id).sort(byPost).reverse();
+  $("overlay").innerHTML = `<form class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle">${editing ? "Edit video" : "New video"}</h2>
+    <div class="fgrid">
+      <div class="field full"><label for="fTitle">Title</label><input id="fTitle" required dir="auto" value="${esc(v.title)}" placeholder="e.g. How to get your first 5 clients"></div>
+      <div class="field"><label for="fKind">Type</label><select id="fKind"><option value="long" ${v.kind==="long"?"selected":""}>Long video</option><option value="short" ${v.kind==="short"?"selected":""}>Short</option></select></div>
+      <div class="field"><label for="fStatus">Status</label><select id="fStatus">${STATUSES.map((s,i) => `<option value="${i}" ${(v.status||0)===i?"selected":""}>${s}</option>`).join("")}</select></div>
+      <div class="field full" id="fParentWrap"><label for="fParent">Cut from</label><select id="fParent"><option value="">Filmed on its own</option>${longs.map(l => `<option value="${esc(l.id)}" ${v.parent===l.id?"selected":""}>${esc(l.title)}</option>`).join("")}</select></div>
+      <div class="field" id="fFilmWrap"><label for="fFilm">Film day</label><input type="date" id="fFilm" value="${esc(v.film||"")}"></div>
+      <div class="field"><label for="fPost">Post day</label><input type="date" id="fPost" value="${esc(v.post||"")}"></div>
+      <div class="field"><label for="fWhen">Post time</label><select id="fWhen">${["After Fajr","After Dhuhr","After Asr","After Maghrib","After Isha"].map(w => `<option ${v.when===w?"selected":""}>${w}</option>`).join("")}</select></div>
+      <div class="field"><label for="fTopic">Topic</label><select id="fTopic">${TOPICS.map(t => `<option ${topicOf(v)===t?"selected":""}>${esc(t)}</option>`).join("")}</select></div>
+      <div class="field full"><span class="lab">Post on</span><div class="ticks">${PLAT_ORDER.map(p => `<label class="pc"><input type="checkbox" name="fPlat" value="${p}" ${(v.plats||[]).includes(p)?"checked":""}><span class="pl p-${p} on">${PLATFORMS[p].short}</span>${PLATFORMS[p].label}</label>`).join("")}</div></div>
+    </div>
+    <div class="foot">${editing ? `<button class="btn danger" type="button" data-act="delete-video">Delete video</button>` : "<span></span>"}<div><button class="btn" type="button" data-act="close-sheet">Cancel</button><button class="btn primary" type="submit">${editing ? "Save" : "Create"}</button></div></div>
+  </form>`;
+  $("overlay").hidden = false;
+  const sync = () => { const short = $("fKind").value === "short"; $("fParentWrap").hidden = !short; $("fFilmWrap").hidden = short && !!$("fParent").value; };
+  $("fKind").onchange = () => { const short = $("fKind").value === "short"; PLAT_ORDER.forEach(p => document.querySelector(`input[name=fPlat][value=${p}]`).checked = short ? SHORT_PLATS.includes(p) : p === "yt"); $("fWhen").value = short ? "After Isha" : "After Asr"; sync(); };
+  $("fParent").onchange = sync; sync();
+  $("sheet").onsubmit = e => {
+    e.preventDefault();
+    const short = $("fKind").value === "short", parent = short ? $("fParent").value : "";
+    const body = { ...(editing ? state.videos[v.id] : {created:Date.now(), script:"", posted:{}}),
+      title:$("fTitle").value.trim(), kind: short ? "short" : "long", status:+$("fStatus").value,
+      parent: parent || null, film: parent ? "" : $("fFilm").value, post:$("fPost").value, when:$("fWhen").value, topic:$("fTopic").value,
+      plats:[...document.querySelectorAll("input[name=fPlat]:checked")].map(i => i.value) };
+    if (!body.title) return;
+    const id = editing ? v.id : newId("v");
+    save("videos", id, body); closeSheet();
+    if (!editing) openVideo(id); else renderView();
+  };
+  setTimeout(() => $("fTitle").focus(), 0);
+  state.sheetFor = editing ? v.id : null;
+}
+function closeSheet(){ $("overlay").hidden = true; $("overlay").innerHTML = ""; }
+
+/* ================= Add sheet: YouTube video, short or task ================= */
+function openAdd(type, preset){
+  preset = preset || {};
+  const st = { type: type || "short", who: isUmar() ? "umar" : "khalid" };
+  const longs = videoList().filter(x => x.kind === "long").sort(byPost).reverse();
+  const upcoming = videoList().filter(v => !v.post || v.post >= todayKey()).sort(byPost);
+  const draw = () => {
+    const vid = st.type !== "task";
+    $("overlay").innerHTML = `<form class="sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+      <h2 id="addTitle">What do you want to add?</h2>
+      <div class="choice" role="radiogroup" aria-label="Type">
+        <button type="button" role="radio" aria-checked="${st.type==="long"}" data-type="long"><span class="pl p-yt on">YT</span><b>YouTube video</b><small>Long, 8–15 min</small></button>
+        <button type="button" role="radio" aria-checked="${st.type==="short"}" data-type="short"><span class="plats"><span class="pl p-ig on">IG</span><span class="pl p-tt on">TT</span><span class="pl p-sc on">SC</span></span><b>Short</b><small>20–40 sec</small></button>
+        <button type="button" role="radio" aria-checked="${st.type==="task"}" data-type="task"><span class="checkic">✓</span><b>Other task</b><small>Anything else</small></button>
+      </div>
+      ${vid ? `<div class="fgrid">
+        <div class="field full"><label for="aTitle">Title</label><input id="aTitle" dir="auto" required placeholder="${st.type==="long" ? "e.g. How to get your first 5 clients" : "e.g. Rating gym habits"}" value="${esc(preset.title||"")}"></div>
+        ${st.type==="short" && longs.length ? `<div class="field full"><label for="aParent">Cut from</label><select id="aParent"><option value="">Filmed on its own</option>${longs.map(l => `<option value="${esc(l.id)}">${esc(l.title)}</option>`).join("")}</select></div>` : ""}
+        <div class="field full"><label for="aTopic">Topic</label><select id="aTopic">${TOPICS.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
+        <div class="field" id="aFilmWrap"><label for="aFilm">Record date</label><input type="date" id="aFilm" value="${esc(preset.film||"")}"></div>
+        <div class="field"><label for="aPost">Post date</label><input type="date" id="aPost" value="${esc(preset.post||"")}"></div>
+        <div class="field full"><label for="aScript">Script <small style="font-weight:400;color:var(--muted)">optional, paste it if it's ready</small></label><textarea id="aScript" dir="auto" placeholder="Paste from Google Docs, Word or Notes"></textarea></div>
+      </div>` : `<div class="fgrid">
+        <div class="field full"><label for="aText">What needs doing?</label><input id="aText" dir="auto" required placeholder="e.g. Book the gym for Sunday's shoot" value="${esc(preset.title||"")}">
+          <div class="quick" aria-label="Quick picks">${(QUICK[st.who]||[]).map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>
+        <div class="field full"><span class="lab">For</span><div class="segfull" role="group" aria-label="For">${Object.entries(PEOPLE).map(([k,n]) => `<button type="button" data-who="${k}" aria-pressed="${st.who===k}">${n}</button>`).join("")}</div></div>
+        <div class="field"><label for="aDue">Due date</label><input type="date" id="aDue" value="${esc(preset.post||"")}"></div>
+        <div class="field"><label for="aVid">About a video <small style="font-weight:400;color:var(--muted)">optional</small></label><select id="aVid"><option value="">None</option>${upcoming.map(v => `<option value="${esc(v.id)}">${esc(v.title)}</option>`).join("")}</select></div>
+      </div>`}
+      <div class="foot"><span class="status" id="addNote"></span><div><button class="btn" type="button" data-act="close-sheet">Cancel</button><button class="btn primary" type="submit">Add</button></div></div>
+    </form>`;
+    $("overlay").hidden = false;
+    const f = $(vid ? "aTitle" : "aText"); setTimeout(() => f.focus(), 0);
+    if ($("aParent")) $("aParent").onchange = e => { $("aFilmWrap").hidden = !!e.target.value; };
+    $("addSheet").onclick = e => {
+      const t = e.target.closest("[data-type]"); if (t){ const keep = $(vid ? "aTitle" : "aText").value; st.type = t.dataset.type; preset.title = keep; draw(); return; }
+      const q = e.target.closest("[data-quick]"); if (q){ $("aText").value = q.dataset.quick; $("aText").focus(); return; }
+      const w = e.target.closest("[data-who]"); if (w){ st.who = w.dataset.who; preset.title = $("aText").value; const due = $("aDue").value, vidSel = $("aVid").value; draw(); $("aDue").value = due; $("aVid").value = vidSel; }
+    };
+    $("addSheet").onsubmit = e => {
+      e.preventDefault();
+      if (vid){
+        const title = $("aTitle").value.trim(); if (!title) return;
+        const script = $("aScript").value, parent = $("aParent") ? $("aParent").value : "";
+        const short = st.type === "short";
+        save("videos", newId("v"), { title, kind: short ? "short" : "long", status: script.trim() ? S.READY : S.IDEA, parent: parent || null,
+          film: parent ? "" : $("aFilm").value, post: $("aPost").value, when: short ? "After Isha" : "After Asr",
+          plats: short ? SHORT_PLATS.slice() : ["yt"], pillar:"", topic: $("aTopic").value, script, posted:{}, created: Date.now() });
+        setStatus(`Added "${title}"`);
+      } else {
+        const text = $("aText").value.trim(); if (!text) return;
+        save("tasks", newId("t"), { text, who: st.who, due: $("aDue").value || "", video: $("aVid").value || null, done:false, created: Date.now() });
+        setStatus("Task added");
+      }
+      closeSheet(); renderNav(); renderView();
+    };
+  };
+  draw();
+}
+
+/* ================= Plan a week from the templates ================= */
+function nextWeekToPlan(){
+  // The first week (from launch) that has no long video yet
+  const vids = videoList();
+  for (let n = 1; n < 200; n++) if (!vids.some(v => v.week === n && v.slot === "L")) return n;
+  return 1;
+}
+function planWeek(n){
+  const ws = addDays(parseKey(state.launch), 7*(n-1)), at = o => keyOf(addDays(ws,o));
+  const existing = videoList();
+  const findSlot = (w, slot) => existing.find(v => v.week === w && v.slot === slot) || plannedNow.find(v => v.week === w && v.slot === slot);
+  const plannedNow = [];
+  const has = slot => existing.some(v => v.week === n && v.slot === slot);
+  const longId = has("L") ? (existing.find(v => v.week === n && v.slot === "L") || {}).id : newId("v");
+  if (!has("L")){
+  const L = { title:`Video #${n}: ${pillarOf(n)}`, kind:"long", slot:"L", week:n, status:0, film:at(1), post:at(4), when:"After Asr", plats:["yt"], pillar:pillarOf(n), parent:null, script:"", posted:{}, created:Date.now() };
+  plannedNow.push({id:longId, ...L}); save("videos", longId, L);
+  }
+  SLOTS.filter(s => s.slot !== "L" && !has(s.slot)).forEach(s => {
+    const prevLong = s.fromPrev ? findSlot(n-1, "L") : null;
+    const parent = s.slot === "S3" ? longId : s.fromPrev ? (prevLong ? prevLong.id : null) : null;
+    const from = s.slot === "S3" ? ` (from video #${n})` : s.fromPrev ? (prevLong ? ` (from video #${n-1})` : " (backlog)") : "";
+    const body = { title:`${s.name}${from}`, kind:"short", slot:s.slot, week:n, status:0, parent, film: s.slot === "S4" ? at(1) : "", post:at(s.day), when:s.when, plats:SHORT_PLATS.slice(), pillar: s.slot === "S4" ? "Behind the scenes" : (parent ? pillarOf(s.fromPrev ? n-1 : n) : ""), script:"", posted:{}, created:Date.now() };
+    save("videos", newId("v"), body);
+  });
+}
+
+/* ================= events ================= */
+const appEl = $("app");
+function setCollapse(which, collapsed, persist=true){
+  const cls = which === "nav" ? "nav-c" : "panel-c", btn = $(which === "nav" ? "navToggle" : "panelToggle");
+  appEl.classList.toggle(cls, collapsed);
+  btn.setAttribute("aria-expanded", String(!collapsed));
+  const name = which === "nav" ? "left sidebar" : "day panel";
+  btn.setAttribute("aria-label", (collapsed ? "Expand " : "Collapse ") + name); btn.title = btn.getAttribute("aria-label");
+  btn.textContent = which === "nav" ? (collapsed ? "»" : "«") : (collapsed ? "«" : "»");
+  if (persist){ try { localStorage.setItem("ifa-"+cls, collapsed ? "1" : "0"); } catch(e){} }
+}
+$("navToggle").onclick = () => setCollapse("nav", !appEl.classList.contains("nav-c"));
+$("panelToggle").onclick = () => setCollapse("panel", !appEl.classList.contains("panel-c"));
+function setRole(r){
+  state.role = PEOPLE[r] ? r : "umar";
+  try { localStorage.setItem("ifa-role", state.role); } catch(e){}
+  if (!NAV[state.role].some(([v]) => v === state.prevView) && state.view !== "video") { location.hash = "today"; go("today"); }
+  else { renderNav(); renderView(); }
+}
+function openMe(btn){
+  const m = $("meMenu"), other = state.role === "umar" ? "khalid" : "umar";
+  m.innerHTML = `<div class="lab">Switch to</div><button type="button" role="menuitem" data-role="${other}"><span class="av ${other}">${PEOPLE[other][0]}</span><span><b>${PEOPLE[other]}</b><small>${ROLE_NOTE[other]}</small></span></button>`;
+  m.hidden = false;
+  const r = btn.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
+  const up = r.bottom + mh + 8 > innerHeight;
+  m.style.top = (up ? r.top - mh - 6 : r.bottom + 6) + "px";
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + "px";
+  document.querySelectorAll("[data-act=me]").forEach(b => b.setAttribute("aria-expanded","true"));
+  m.querySelector("button").focus();
+}
+function closeMe(){ $("meMenu").hidden = true; document.querySelectorAll("[data-act=me]").forEach(b => b.setAttribute("aria-expanded","false")); }
+document.addEventListener("click", e => {
+  const r = e.target.closest("[data-role]"); if (r){ closeMe(); setRole(r.dataset.role); return; }
+  const m = e.target.closest("[data-act=me]"); if (m){ $("meMenu").hidden ? openMe(m) : closeMe(); return; }
+  if (!e.target.closest("#meMenu")) closeMe();
+}, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeMe(); });
+
+$("grid").addEventListener("mouseover", e => { const c = e.target.closest(".day"); if (c && canHover) showPop(c); });
+$("grid").addEventListener("mouseleave", () => pop.hidden = true);
+$("grid").addEventListener("click", e => {
+  const c = e.target.closest(".day"); if (!c) return;
+  state.sel = c.dataset.k; const d = parseKey(state.sel);
+  if (d.getMonth() !== state.month.getMonth()) state.month = new Date(d.getFullYear(), d.getMonth(), 1);
+  pop.hidden = true; renderGrid(); renderPanel();
+  if (appEl.classList.contains("panel-c")) setCollapse("panel", false);
+  if (innerWidth <= 760) $("panel").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth"});
+});
+$("prev").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth()-1, 1); renderGrid(); };
+$("next").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth()+1, 1); renderGrid(); };
+$("todayBtn").onclick = () => { const t = new Date(); state.month = new Date(t.getFullYear(), t.getMonth(), 1); state.sel = todayKey(); renderGrid(); renderPanel(); };
+$("launch").addEventListener("change", e => { if (e.target.value){ state.launch = e.target.value; save("settings","main",{launch:state.launch}); renderView(); } });
+
+document.addEventListener("click", e => {
+  const o = e.target.closest("[data-open]");
+  if (o){ e.preventDefault(); openVideo(o.dataset.open); return; }
+  const rf = e.target.closest("[data-rf]"); if (rf){ state.readyFilter = rf.dataset.rf; renderReady(); return; }
+  const tw = e.target.closest("[data-tw]"); if (tw){ state.taskWho = tw.dataset.tw; renderTasks(); return; }
+  const bd = e.target.closest("[data-board]"); if (bd){ state.board = bd.dataset.board; renderBoard(); return; }
+  const dt = e.target.closest("[data-deltask]"); if (dt){ remove("tasks", dt.dataset.deltask); return; }
+  if (e.target === $("overlay")){ if (!$("codeSheet")) closeSheet(); return; }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const v = vget(state.videoSel);
+  switch (a.dataset.act){
+    case "back": location.hash = state.prevView || "today"; break;
+    case "add": e.preventDefault(); openAdd(state.view === "tasks" ? "task" : "short"); break;
+    case "add-long": openAdd("long"); break;
+    case "add-task": openAdd("task"); break;
+    case "add-slot": openAdd(a.dataset.kind, {post: state.sel}); break;
+    case "add-day": openAdd("short", {post: state.sel}); break;
+    case "close-sheet": closeSheet(); break;
+    case "edit-video": openSheet(v); break;
+    case "delete-video":
+      if (a.dataset.sure){ const id = state.sheetFor; closeSheet(); remove("videos", id); go(state.prevView); }
+      else { a.dataset.sure = "1"; a.textContent = "Click again to delete"; }
+      break;
+    case "plan-next": { const n = nextWeekToPlan(); planWeek(n); setStatus(`Planned week ${n}`); renderView(); break; }
+    case "plan-4": { for (let n = 1; n <= 4; n++) planWeek(n); renderNav(); renderView(); break; }
+    case "filmed": saveVideo(v.id, {status:S.FILMED, filmedAt:Date.now()}); break;
+    case "unfilm": saveVideo(v.id, {status:S.READY}); break;
+    case "edit-script": state.editing = true; renderVideo(); break;
+    case "done-edit": flushScript(); state.editing = false; renderVideo(); break;
+    case "insert-tpl": { const b = $("scriptBox"); b.value = v.kind === "long" ? LONG_SCRIPT : SHORT_SCRIPT; b.dispatchEvent(new Event("input", {bubbles:true})); renderVideo(); break; }
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("overlay").hidden && !$("codeSheet")) closeSheet(); });
+
+function saveVideo(id, patch){ save("videos", id, {...state.videos[id], ...patch}); renderNav(); renderView(); }
+$("v-video").addEventListener("change", e => {
+  const v = vget(state.videoSel); if (!v) return;
+  if (e.target.id === "vStatus") saveVideo(v.id, {status:+e.target.value});
+  if (e.target.dataset.posted){
+    const posted = {...(v.posted||{}), [e.target.dataset.posted]: e.target.checked};
+    const all = (v.plats||[]).every(p => posted[p]);
+    saveVideo(v.id, {posted, status: all ? S.POSTED : (v.status === S.POSTED ? S.EDITING : v.status)});
+  }
+  if (e.target.id === "importFile" && e.target.files[0]){
+    const r = new FileReader();
+    r.onload = () => { const b = $("scriptBox"); b.value = String(r.result || ""); b.dispatchEvent(new Event("input", {bubbles:true})); setStatus("Script imported"); };
+    r.readAsText(e.target.files[0]);
+  }
+});
+let scriptTimer = null, scriptPending = null;
+function flushScript(){ if (scriptPending){ clearTimeout(scriptTimer); const id = scriptPending; scriptPending = null; save("videos", id, state.videos[id]); } }
+$("v-video").addEventListener("input", e => {
+  if (e.target.id !== "scriptBox") return;
+  const id = state.videoSel, v = state.videos[id]; if (!v) return;
+  const patch = {script:e.target.value};
+  if ((v.status||0) === S.IDEA && e.target.value.trim()) patch.status = S.SCRIPTING;
+  state.videos[id] = {...v, ...patch}; scriptPending = id; setStatus("Unsaved changes…");
+  clearTimeout(scriptTimer); scriptTimer = setTimeout(flushScript, 800);
+});
+
+document.addEventListener("change", e => {
+  const fid = e.target.dataset && e.target.dataset.filmed;
+  if (fid && state.videos[fid]){ saveVideo(fid, e.target.checked ? {status:S.FILMED, filmedAt:Date.now()} : {status:S.READY}); return; }
+  const id = e.target.dataset && e.target.dataset.task; if (!id || !state.tasks[id]) return;
+  save("tasks", id, {...state.tasks[id], done:e.target.checked}); renderView();
+});
+
+/* ================= saving: synced through Supabase =================
+   Everything lives in one table (ifa_items) reached only through two functions that check the team code.
+   A copy is kept on the device so the app opens instantly and works offline; changes wait in a queue until online. */
+const SB_URL = "https://imaguxksitjekaqlfpyc.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltYWd1eGtzaXRqZWthcWxmcHljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5MzQwMDIsImV4cCI6MjExMDUxMDAwMn0.tDqVilLgoF4IRRm54ivFMcE-6ZY2oLZS9Hf5LXEj1vE";
+const LS = "ifa-cache-v2", LSQ = "ifa-queue-v2", LSC = "ifa-code";
+let cache = {videos:{}, tasks:{}, settings:{}}, queue = {}, code = "", pushing = false;
+const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch(e){ return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+function setStatus(t){ $("saveStatus").textContent = t; }
+function applyCache(){
+  const live = col => { const o = {}; Object.entries(cache[col]||{}).forEach(([id,x]) => { if (!x.deleted) o[id] = x.data; }); return o; };
+  state.videos = live("videos"); state.tasks = live("tasks");
+  const st = (cache.settings||{}).main; state.launch = (st && !st.deleted && st.data.launch) || DEFAULT_LAUNCH;
+  $("launch").value = state.launch;
+}
+async function rpc(fn, body){
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}` }, body: JSON.stringify(body) });
+  if (!r.ok){ const t = await r.text(); const err = new Error(t); err.wrongCode = /wrong code/.test(t); throw err; }
+  return r.status === 204 ? null : r.json();
+}
+function queueItem(col, id, data, deleted){
+  const key = col + "/" + id;
+  queue[key] = {col, id, data, deleted: !!deleted};
+  cache[col] = cache[col] || {}; cache[col][id] = {data, deleted: !!deleted};
+  lsSet(LSQ, queue); lsSet(LS, cache);
+  clearTimeout(queueItem.t); queueItem.t = setTimeout(flush, 300);
+}
+async function flush(){
+  if (pushing || !code) return;
+  const items = Object.values(queue); if (!items.length) return;
+  pushing = true; setStatus("Saving…");
+  try {
+    for (let i = 0; i < items.length; i += 100) await rpc("ifa_push", {p_code: code, p_items: items.slice(i, i+100)});
+    items.forEach(it => { const k = it.col + "/" + it.id; if (queue[k] === it) delete queue[k]; });
+    lsSet(LSQ, queue); setStatus("Synced");
+  } catch(e){ setStatus(e.wrongCode ? "Team code not accepted" : "Offline. Changes will sync when you're back online."); if (e.wrongCode) askCode(true); }
+  pushing = false;
+  if (Object.keys(queue).length && !pushing) setTimeout(flush, 15000);
+}
+async function pull(){
+  if (!code) return;
+  try {
+    const rows = await rpc("ifa_pull", {p_code: code});
+    if (!rows.length){ await seed(); return; }
+    const fresh = {videos:{}, tasks:{}, settings:{}};
+    rows.forEach(r => { (fresh[r.col] = fresh[r.col] || {})[r.id] = {data:r.data, deleted:r.deleted}; });
+    Object.values(queue).forEach(q => { (fresh[q.col] = fresh[q.col] || {})[q.id] = {data:q.data, deleted:q.deleted}; }); // unsent changes win
+    cache = fresh; lsSet(LS, cache); applyCache(); rerenderFromData();
+    if (!Object.keys(queue).length) setStatus("Synced"); else flush();
+  } catch(e){ if (e.wrongCode){ setStatus("Team code not accepted"); askCode(true); } else setStatus("Offline. Showing the last saved copy."); }
+}
+async function seed(){
+  // First run on an empty table: upload the scripts that ship with the app
+  try {
+    const base = await (await fetch("content.json", {cache:"no-cache"})).json();
+    Object.entries(base.videos||{}).forEach(([id,v]) => queueItem("videos", id, v, false));
+    Object.entries(base.tasks||{}).forEach(([id,t]) => queueItem("tasks", id, t, false));
+    queueItem("settings", "main", {launch: base.launch || DEFAULT_LAUNCH}, false);
+    applyCache(); rerenderFromData(); await flush();
+  } catch(e){ setStatus("Couldn't load the starting scripts."); }
+}
+function save(col, id, body){
+  if (col === "settings"){ state.launch = body.launch; queueItem("settings", "main", {launch: body.launch}, false); return; }
+  state[col][id] = body; queueItem(col, id, body, false);
+  if (col === "tasks" && (state.view === "tasks" || state.view === "today")) renderView();
+}
+function remove(col, id){ delete state[col][id]; queueItem(col, id, {}, true); renderNav(); renderView(); }
+function rerenderFromData(){
+  renderNav();
+  const typing = document.activeElement && (document.activeElement.id === "scriptBox" || $("overlay").contains(document.activeElement));
+  if (!typing) renderView();
+}
+function askCode(wrong){
+  $("overlay").innerHTML = `<form class="sheet" id="codeSheet" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
+    <h2 id="codeTitle">Enter the team code</h2>
+    <p class="status" style="margin-bottom:12px">${wrong ? "That code didn't work. Check it with Umar and try again." : "Umar will give you this code. You only need to enter it once on this device."}</p>
+    <div class="field"><label for="codeIn">Team code</label><input id="codeIn" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="IFA-XXXXXX" style="font-size:18px;letter-spacing:.06em"></div>
+    <div class="foot"><span></span><div><button class="btn primary" type="submit">Continue</button></div></div></form>`;
+  $("overlay").hidden = false; setTimeout(() => $("codeIn").focus(), 0);
+  $("codeSheet").onsubmit = e => { e.preventDefault(); const c = $("codeIn").value.trim().toUpperCase(); if (!c) return; code = c; try { localStorage.setItem(LSC, c); } catch(_){} closeSheet(); pull(); };
+}
+async function connect(){
+  cache = lsGet(LS, cache); queue = lsGet(LSQ, {});
+  const fromUrl = new URLSearchParams(location.search).get("code");
+  if (fromUrl){ try { localStorage.setItem(LSC, fromUrl.toUpperCase()); } catch(e){} history.replaceState(null, "", location.pathname + location.hash); }
+  try { code = localStorage.getItem(LSC) || ""; } catch(e){}
+  applyCache(); rerenderFromData();
+  if (!code){ setStatus("Waiting for team code"); askCode(false); return; }
+  setStatus("Syncing…"); await pull(); flush();
+}
+setInterval(() => { if (document.visibilityState === "visible" && !$("overlay").contains(document.activeElement)) { pull(); } }, 20000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
+addEventListener("online", () => { flush(); pull(); });
+
+/* ================= start ================= */
+(function init(){
+  try {
+    if (localStorage.getItem("ifa-nav-c") === "1") setCollapse("nav", true, false);
+    if (localStorage.getItem("ifa-panel-c") === "1") setCollapse("panel", true, false);
+    const r = localStorage.getItem("ifa-role"); if (PEOPLE[r]) state.role = r;
+  } catch(e){}
+  const t = new Date();
+  state.month = new Date(t.getFullYear(), t.getMonth(), 1);
+  state.sel = todayKey();
+  $("launch").value = state.launch;
+  go(location.hash.slice(1) || "today");
+  connect();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>
