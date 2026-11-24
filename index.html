@@ -163,6 +163,30 @@ details.fold[open] summary{margin-bottom:8px}
 .slothead small{font-weight:400;color:var(--muted)}
 .openslot{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:13.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 
+/* ----- ideas ----- */
+.ibox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;max-width:860px;margin-bottom:16px}
+.ibox textarea{width:100%;border:0;background:transparent;resize:vertical;font-size:16px;line-height:1.5;min-height:72px;outline:none}
+.irow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.irow .grow{flex:1}
+.mic{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:7px 14px 7px 10px;cursor:pointer;font-weight:500}
+.mic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.mic[aria-pressed="true"]{background:#d22f27;border-color:#d22f27;color:#fff}
+@media (prefers-reduced-motion:no-preference){.mic[aria-pressed="true"]{animation:pulse 1.4s ease-in-out infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(210,47,39,.18)}}
+.lang button{padding:5px 10px;font-size:13px}
+.itabs{margin-bottom:12px;max-width:860px}
+.ilist{display:flex;flex-direction:column;gap:10px;max-width:860px}
+.idea{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.idea.fresh{border-left:4px solid var(--film)}
+.ihead{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.ihead .av{width:24px;height:24px;font-size:11px;opacity:1}
+.ihead .grow{flex:1}
+.ist{font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 8px;border:1px solid currentColor}
+.ist-new{color:var(--film)}.ist-saved{color:var(--accent)}.ist-used{color:var(--good)}.ist-dismissed{color:var(--muted)}
+.itext{margin:8px 0 0;font-size:15.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ilink{margin:6px 0 0;font-size:13.5px}
+.iacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+
 /* ----- badges & pills ----- */
 .pl{display:inline-block;font:700 10px/1.4 var(--body);letter-spacing:.03em;padding:0 5px;border-radius:4px;border:1.5px solid var(--pc);color:var(--pc);background:transparent}
 .pl.on{background:var(--pc);color:var(--pcf)}
@@ -353,6 +377,9 @@ aside.panel{border-left:1px solid var(--line);background:var(--surface);padding:
   .top .seg{flex:1 1 100%;order:5}
   .top .seg button{flex:1;padding:8px 6px;white-space:nowrap}
   #v-videos .top .btn{flex:1;order:6}
+  .itabs{display:flex}.itabs button{flex:1;padding:8px 4px;font-size:13px}
+  .iacts .btn{flex:1}
+  .bbar a,.bbar button{font-size:10.5px}
   /* tasks */
   #v-tasks .top{flex-wrap:wrap}
   #addTaskBtn{display:none}
@@ -422,6 +449,8 @@ aside.panel{border-left:1px solid var(--line);background:var(--surface);padding:
     <section class="view" id="v-videos"></section>
     <section class="view" id="v-video"></section>
 
+    <section class="view" id="v-ideas"></section>
+
     <section class="view" id="v-tasks">
       <div class="top"><h1>Tasks</h1><span class="grow"></span><div class="seg" id="taskFilter" role="group" aria-label="Whose tasks"></div><button class="btn primary" type="button" data-act="add-task" id="addTaskBtn">+ Add task</button></div>
       <div id="tasks"></div>
@@ -470,10 +499,10 @@ const QUICK = {
 const TOPICS = ["Training tips","Gym habits & myths","Khalid's story","Gym-floor questions","Trainer life & IFA","Other"];
 const ROLE_NOTE = { umar:"Content", khalid:"Trainer" };
 const NAV = {
-  umar:   [["today","Today"],["calendar","Calendar"],["videos","Videos"],["tasks","Tasks"],["templates","Templates"],["strategy","Strategy"]],
-  khalid: [["today","Today"],["calendar","Calendar"],["ready","Ready to film"],["tasks","Tasks"]]
+  umar:   [["today","Today"],["calendar","Calendar"],["videos","Videos"],["ideas","Ideas"],["tasks","Tasks"],["templates","Templates"],["strategy","Strategy"]],
+  khalid: [["today","Today"],["calendar","Calendar"],["ready","Ready to film"],["ideas","Ideas"],["tasks","Tasks"]]
 };
-const ALL_VIEWS = ["today","calendar","ready","videos","video","tasks","templates","strategy"];
+const ALL_VIEWS = ["today","calendar","ready","videos","video","ideas","tasks","templates","strategy"];
 const PLATFORMS = { yt:{label:"YouTube", short:"YT"}, ig:{label:"Instagram", short:"IG"}, tt:{label:"TikTok", short:"TT"}, sc:{label:"Snapchat", short:"SC"} };
 const PLAT_ORDER = ["yt","ig","tt","sc"];
 const SHORT_PLATS = ["ig","tt","sc"];
@@ -523,7 +552,7 @@ const SLOTS = [
 
 /* ================= state ================= */
 const state = {
-  launch: DEFAULT_LAUNCH, videos:{}, tasks:{},
+  launch: DEFAULT_LAUNCH, videos:{}, tasks:{}, ideas:{},
   role:"umar", view:"today", prevView:"today", videoSel:null, editing:false,
   month:null, sel:null, board:"status", taskWho:"mine",
   db:null, readOnly:false
@@ -576,7 +605,7 @@ function renderScriptText(txt){
 function renderNav(){
   const ready = videoList().filter(v => (v.status||0) === S.READY).length;
   const items = NAV[state.role];
-  const link = ([v,label], cls) => `<a class="${cls}" href="#${v}" data-v="${v}">${label}${v === "ready" && ready ? `<span class="count">${ready}</span>` : ""}</a>`;
+  const link = ([v,label], cls) => `<a class="${cls}" href="#${v}" data-v="${v}">${label}${v === "ready" && ready ? `<span class="count">${ready}</span>` : ""}${v === "ideas" && newIdeas() ? `<span class="count">${newIdeas()}</span>` : ""}</a>`;
   $("navLinks").innerHTML = items.map(i => link(i, "navitem")).join("");
   const me = state.role;
   const ICON = {
@@ -584,12 +613,13 @@ function renderNav(){
     calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
     ready:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
     videos:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>',
+    ideas:'<svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>',
     tasks:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-6"/></svg>',
     more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>'
   };
-  const main4 = items.filter(([v]) => ["today","calendar","ready","videos","tasks"].includes(v));
-  const extra = items.filter(([v]) => !["today","calendar","ready","videos","tasks"].includes(v));
-  $("bbar").innerHTML = main4.map(([v,l]) => `<a href="#${v}" data-v="${v}">${ICON[v]}<span>${l === "Ready to film" ? "Ready" : l}</span>${v === "ready" && ready ? `<span class="count">${ready}</span>` : ""}</a>`).join("")
+  const main4 = items.filter(([v]) => ["today","calendar","ready","videos","ideas","tasks"].includes(v));
+  const extra = items.filter(([v]) => !["today","calendar","ready","videos","ideas","tasks"].includes(v));
+  $("bbar").innerHTML = main4.map(([v,l]) => `<a href="#${v}" data-v="${v}">${ICON[v]}<span>${l === "Ready to film" ? "Ready" : l}</span>${v === "ready" && ready ? `<span class="count">${ready}</span>` : ""}${v === "ideas" && newIdeas() ? `<span class="count">${newIdeas()}</span>` : ""}</a>`).join("")
     + (extra.length ? `<button type="button" data-act="more" aria-haspopup="menu" class="${extra.some(([v]) => v === state.view) ? "active" : ""}">${ICON.more}<span>More</span></button>` : "");
   $("mbarMe").innerHTML = `<button type="button" class="meav" data-act="me" aria-haspopup="menu" aria-label="Viewing as ${PEOPLE[state.role]}. Switch profile"><span class="av ${state.role}">${PEOPLE[state.role][0]}</span></button>`;
   $("meBtn").innerHTML = `<span class="av ${me}">${PEOPLE[me][0]}</span><span><b>${PEOPLE[me]}</b><small>${ROLE_NOTE[me]}</small></span><span class="chev" aria-hidden="true">⇅</span>`;
@@ -623,6 +653,7 @@ function renderView(){
   if (v === "videos") renderBoard();
   if (v === "video") renderVideo();
   if (v === "tasks") renderTasks();
+  if (v === "ideas") renderIdeas();
   if (v === "templates") renderTemplates();
 }
 addEventListener("hashchange", () => go(location.hash.slice(1)));
@@ -679,6 +710,8 @@ function renderToday(){
     if (vids.length) html += `<div class="sec"><h2>Scripts to finish</h2>${toWrite.length ? `<div class="rows">${toWrite.map(v => vrow(v)).join("")}</div>` : `<p class="empty">No scripts due in the next 10 days.</p>`}</div>`;
     const toEdit = vids.filter(v => v.status === S.FILMED || v.status === S.EDITING).sort(byPost);
     if (toEdit.length) html += `<div class="sec"><h2>To edit</h2><div class="rows">${toEdit.map(v => vrow(v)).join("")}</div></div>`;
+    const inbox = ideaList().filter(i => i.by === "khalid" && (i.status || "new") === "new");
+    if (inbox.length) html += `<div class="sec"><h2>New ideas from Khalid</h2><div class="rows">${inbox.slice(0,3).map(ideaCard).join("")}</div>${inbox.length > 3 ? `<p><a href="#ideas">See all ${inbox.length}</a></p>` : ""}</div>`;
     const mine = openTasksFor("umar");
     html += `<div class="sec"><h2>Your tasks</h2>${mine.length ? taskRows(mine.slice(0,6)) : `<p class="empty">No tasks.</p>`}${mine.length > 6 ? `<p><a href="#tasks">See all ${mine.length}</a></p>` : ""}</div>`;
   }
@@ -848,6 +881,81 @@ function renderTasks(){
   $("tasks").innerHTML = (open.length ? taskRows(open) : `<p class="empty">No open tasks.</p>`) + (done.length ? `<div class="subhead">Done</div>${taskRows(done)}` : "");
 }
 
+/* ================= Ideas ================= */
+const IDEA_STATUS = { new:"New", saved:"Saved", used:"Turned into a video", dismissed:"Dismissed" };
+const ideaList = () => Object.entries(state.ideas||{}).map(([id,x]) => ({id, ...x})).sort((a,b) => (b.created||0) - (a.created||0));
+const newIdeas = () => isUmar() ? ideaList().filter(i => i.by === "khalid" && (i.status||"new") === "new").length : 0;
+function ideaCard(i){
+  const st = i.status || "new", v = i.video && vget(i.video);
+  const when = new Date(i.created||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  const acts = isUmar() && !state.readOnly
+    ? (st === "used" ? "" : `<div class="iacts"><button class="btn primary" type="button" data-idea-video="${esc(i.id)}">Turn into video</button>${st !== "saved" ? `<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="saved">Save for later</button>` : ""}<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="dismissed">Dismiss</button></div>`)
+    : (i.by === state.role && st === "new" && !state.readOnly ? `<div class="iacts"><button class="btn" type="button" data-idea-del="${esc(i.id)}">Delete</button></div>` : "");
+  return `<div class="idea${st === "new" && i.by === "khalid" && isUmar() ? " fresh" : ""}">
+    <div class="ihead"><span class="av ${i.by}" aria-hidden="true">${esc((PEOPLE[i.by]||"?")[0])}</span><span>${esc(PEOPLE[i.by]||"")} · ${esc(when)}${i.voice ? " · voice" : ""}</span><span class="grow"></span><span class="ist ist-${st}">${IDEA_STATUS[st]}</span></div>
+    <p class="itext" dir="auto">${esc(i.text)}</p>
+    ${v ? `<p class="ilink"><a href="#video" data-open="${esc(v.id)}">Open "${esc(v.title)}" ›</a></p>` : ""}
+    ${acts}</div>`;
+}
+function renderIdeas(){
+  const all = ideaList(), me = state.role;
+  const f = state.ideaTab || (isUmar() ? "inbox" : "mine");
+  let tabs, list;
+  if (isUmar()){
+    tabs = [["inbox",`Khalid`, all.filter(i => i.by === "khalid" && (i.status||"new") === "new").length],["mine","Mine",0],["saved","Saved",0],["done","Done",0]];
+    list = f === "inbox" ? all.filter(i => i.by === "khalid" && (i.status||"new") === "new")
+         : f === "mine" ? all.filter(i => i.by === "umar" && (i.status||"new") === "new")
+         : f === "saved" ? all.filter(i => i.status === "saved")
+         : all.filter(i => i.status === "used" || i.status === "dismissed");
+  } else {
+    tabs = null; list = all.filter(i => i.by === me && i.status !== "dismissed");
+  }
+  const sr = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  $("v-ideas").innerHTML = `<div class="top"><h1>Ideas</h1></div>
+    ${state.readOnly ? "" : `<form class="ibox" id="ideaForm">
+      <textarea id="ideaText" dir="auto" rows="3" placeholder="${isUmar() ? "Jot down an idea…" : "Got an idea for a video? Type it or tap the mic. It goes straight to Umar."}" aria-label="New idea">${esc(state.ideaDraft||"")}</textarea>
+      <div class="irow">
+        ${sr ? `<button type="button" class="mic" id="micBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Speak</span></button>
+        <div class="seg lang" role="group" aria-label="Speaking language"><button type="button" data-lang="en-US" aria-pressed="${(state.lang||"en-US")==="en-US"}">English</button><button type="button" data-lang="ar-SA" aria-pressed="${state.lang==="ar-SA"}">عربي</button></div>` : `<span class="status">Tip: tap the mic on your keyboard to speak your idea.</span>`}
+        <span class="grow"></span><button class="btn primary" type="submit">${isUmar() ? "Save idea" : "Send to Umar"}</button>
+      </div>
+      <p class="status" id="micNote" aria-live="polite"></p>
+    </form>`}
+    ${tabs ? `<div class="seg itabs" role="group" aria-label="Show">${tabs.map(([k,l,n]) => `<button type="button" data-itab="${k}" aria-pressed="${f===k}">${l}${n ? ` ${n}` : ""}</button>`).join("")}</div>` : `<div class="subhead">Your ideas</div>`}
+    <div class="ilist">${list.length ? list.map(ideaCard).join("") : `<p class="empty">${isUmar() ? (f === "inbox" ? "No new ideas from Khalid." : "Nothing here yet.") : "No ideas yet. Anything you send shows up here, and you'll see when Umar turns it into a video."}</p>`}</div>`;
+}
+// Voice: the phone's own speech-to-text, written straight into the idea box
+let rec = null, recBase = "";
+function startMic(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
+  const box = $("ideaText"), btn = $("micBtn");
+  rec = new SR(); rec.lang = state.lang || "en-US"; rec.continuous = true; rec.interimResults = true;
+  recBase = box.value ? box.value.replace(/\s*$/, " ") : "";
+  rec.onresult = e => { let fin = "", tmp = ""; for (let i = 0; i < e.results.length; i++){ (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (tmp += e.results[i][0].transcript)); } box.value = (recBase + fin + tmp).trimStart(); state.ideaDraft = box.value; state.voiceUsed = true; };
+  rec.onerror = e => { $("micNote").textContent = e.error === "not-allowed" || e.error === "service-not-allowed" ? "Microphone blocked. Allow it in your browser settings, or use the mic on your keyboard." : "Couldn't hear that. Try again."; stopMic(); };
+  rec.onend = () => { rec = null; btn.setAttribute("aria-pressed","false"); btn.querySelector("span").textContent = "Speak"; if ($("micNote").textContent === "Listening…") $("micNote").textContent = ""; };
+  try { rec.start(); btn.setAttribute("aria-pressed","true"); btn.querySelector("span").textContent = "Stop"; $("micNote").textContent = "Listening…"; } catch(e){ rec = null; }
+}
+function stopMic(){ if (rec){ try { rec.stop(); } catch(e){} } }
+document.addEventListener("click", e => {
+  if (e.target.closest("#micBtn")){ rec ? stopMic() : startMic(); return; }
+  const lg = e.target.closest("[data-lang]"); if (lg){ state.lang = lg.dataset.lang; try { localStorage.setItem("ifa-lang", state.lang); } catch(_){} document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b === lg))); return; }
+  const it = e.target.closest("[data-itab]"); if (it){ state.ideaTab = it.dataset.itab; renderIdeas(); return; }
+  const st = e.target.closest("[data-idea-set]"); if (st){ const id = st.dataset.ideaSet; save("ideas", id, {...state.ideas[id], status: st.dataset.st}); renderNav(); renderView(); return; }
+  const dl = e.target.closest("[data-idea-del]"); if (dl){ remove("ideas", dl.dataset.ideaDel); return; }
+  const tv = e.target.closest("[data-idea-video]"); if (tv){ const id = tv.dataset.ideaVideo, i = state.ideas[id];
+    const first = (i.text || "").split(/[.!?\n]/)[0].slice(0, 70);
+    openAdd("short", {title: first, script: `Idea from ${PEOPLE[i.by]}:\n${i.text}\n\n` + SHORT_SCRIPT, fromIdea: id}); return; }
+});
+document.addEventListener("input", e => { if (e.target.id === "ideaText") state.ideaDraft = e.target.value; });
+document.addEventListener("submit", e => {
+  if (e.target.id !== "ideaForm") return; e.preventDefault(); stopMic();
+  const text = $("ideaText").value.trim(); if (!text) return;
+  save("ideas", newId("i"), {text, by: state.role, status:"new", voice: !!state.voiceUsed, created: Date.now()});
+  state.ideaDraft = ""; state.voiceUsed = false; setStatus(isUmar() ? "Idea saved" : "Sent to Umar"); renderNav(); renderIdeas();
+  const n = $("micNote"); if (n) n.textContent = isUmar() ? "Saved." : "Sent to Umar.";
+});
+
 /* ================= Templates ================= */
 function renderTemplates(){
   const pl = ps => `<span class="plats">${ps.map(p => `<span class="pl p-${p} on">${PLATFORMS[p].short}</span>`).join("")}</span>`;
@@ -930,7 +1038,7 @@ function openAdd(type, preset){
         <div class="field full"><label for="aTopic">Topic</label><select id="aTopic">${TOPICS.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
         <div class="field" id="aFilmWrap"><label for="aFilm">Record date</label><input type="date" id="aFilm" value="${esc(preset.film||"")}"></div>
         <div class="field"><label for="aPost">Post date</label><input type="date" id="aPost" value="${esc(preset.post||"")}"></div>
-        <div class="field full"><label for="aScript">Script <small style="font-weight:400;color:var(--muted)">optional, paste it if it's ready</small></label><textarea id="aScript" dir="auto" placeholder="Paste from Google Docs, Word or Notes"></textarea></div>
+        <div class="field full"><label for="aScript">Script <small style="font-weight:400;color:var(--muted)">optional, paste it if it's ready</small></label><textarea id="aScript" dir="auto" placeholder="Paste from Google Docs, Word or Notes">${esc(preset.script||"")}</textarea></div>
       </div>` : `<div class="fgrid">
         <div class="field full"><label for="aText">What needs doing?</label><input id="aText" dir="auto" required placeholder="e.g. Book the gym for Sunday's shoot" value="${esc(preset.title||"")}">
           <div class="quick" aria-label="Quick picks">${(QUICK[st.who]||[]).map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>
@@ -954,9 +1062,11 @@ function openAdd(type, preset){
         const title = $("aTitle").value.trim(); if (!title) return;
         const script = $("aScript").value, parent = $("aParent") ? $("aParent").value : "";
         const short = st.type === "short";
-        save("videos", newId("v"), { title, kind: short ? "short" : "long", status: script.trim() ? S.READY : S.IDEA, parent: parent || null,
+        const newVid = newId("v");
+        save("videos", newVid, { title, kind: short ? "short" : "long", status: preset.fromIdea ? S.SCRIPTING : (script.trim() ? S.READY : S.IDEA), parent: parent || null,
           film: parent ? "" : $("aFilm").value, post: $("aPost").value, when: short ? "After Isha" : "After Asr",
           plats: short ? SHORT_PLATS.slice() : ["yt"], pillar:"", topic: $("aTopic").value, script, posted:{}, created: Date.now() });
+        if (preset.fromIdea && state.ideas[preset.fromIdea]) save("ideas", preset.fromIdea, {...state.ideas[preset.fromIdea], status:"used", video: newVid});
         setStatus(`Added "${title}"`);
       } else {
         const text = $("aText").value.trim(); if (!text) return;
@@ -1028,7 +1138,7 @@ function openMe(btn){
 }
 function openMore(btn){
   const m = $("meMenu");
-  m.innerHTML = `<div class="lab">More</div>` + NAV[state.role].filter(([v]) => !["today","calendar","ready","videos","tasks"].includes(v)).map(([v,l]) => `<button type="button" role="menuitem" data-go="${v}"><span><b>${l}</b></span></button>`).join("")
+  m.innerHTML = `<div class="lab">More</div>` + NAV[state.role].filter(([v]) => !["today","calendar","ready","videos","ideas","tasks"].includes(v)).map(([v,l]) => `<button type="button" role="menuitem" data-go="${v}"><span><b>${l}</b></span></button>`).join("")
     + (isUmar() ? `<div class="lab">Launch day</div><div style="padding:0 8px 8px"><input type="date" id="launchM" value="${esc(state.launch)}" style="width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)"></div>` : "");
   m.hidden = false;
   const r = btn.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
@@ -1134,13 +1244,13 @@ document.addEventListener("change", e => {
 const SB_URL = "https://imaguxksitjekaqlfpyc.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltYWd1eGtzaXRqZWthcWxmcHljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5MzQwMDIsImV4cCI6MjExMDUxMDAwMn0.tDqVilLgoF4IRRm54ivFMcE-6ZY2oLZS9Hf5LXEj1vE";
 const LS = "ifa-cache-v2", LSQ = "ifa-queue-v2", LSC = "ifa-code";
-let cache = {videos:{}, tasks:{}, settings:{}}, queue = {}, code = "", pushing = false;
+let cache = {videos:{}, tasks:{}, settings:{}, ideas:{}}, queue = {}, code = "", pushing = false;
 const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") || d; } catch(e){ return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
 function setStatus(t){ $("saveStatus").textContent = t; }
 function applyCache(){
   const live = col => { const o = {}; Object.entries(cache[col]||{}).forEach(([id,x]) => { if (!x.deleted) o[id] = x.data; }); return o; };
-  state.videos = live("videos"); state.tasks = live("tasks");
+  state.videos = live("videos"); state.tasks = live("tasks"); state.ideas = live("ideas");
   const st = (cache.settings||{}).main; state.launch = (st && !st.deleted && st.data.launch) || DEFAULT_LAUNCH;
   $("launch").value = state.launch;
 }
@@ -1173,7 +1283,7 @@ async function pull(){
   try {
     const rows = await rpc("ifa_pull", {p_code: code});
     if (!rows.length){ await seed(); return; }
-    const fresh = {videos:{}, tasks:{}, settings:{}};
+    const fresh = {videos:{}, tasks:{}, settings:{}, ideas:{}};
     rows.forEach(r => { (fresh[r.col] = fresh[r.col] || {})[r.id] = {data:r.data, deleted:r.deleted}; });
     Object.values(queue).forEach(q => { (fresh[q.col] = fresh[q.col] || {})[q.id] = {data:q.data, deleted:q.deleted}; }); // unsent changes win
     cache = fresh; lsSet(LS, cache); applyCache(); rerenderFromData();
@@ -1229,6 +1339,7 @@ addEventListener("online", () => { flush(); pull(); });
     if (localStorage.getItem("ifa-nav-c") === "1") setCollapse("nav", true, false);
     if (localStorage.getItem("ifa-panel-c") === "1") setCollapse("panel", true, false);
     const r = localStorage.getItem("ifa-role"); if (PEOPLE[r]) state.role = r;
+    state.lang = localStorage.getItem("ifa-lang") || "en-US";
   } catch(e){}
   const t = new Date();
   state.month = new Date(t.getFullYear(), t.getMonth(), 1);
