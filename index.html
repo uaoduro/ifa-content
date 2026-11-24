@@ -137,7 +137,8 @@ details.fold[open] summary{margin-bottom:8px}
 .tabs .addmini{background:var(--accent);color:var(--surface);border-color:var(--accent);font-weight:600}
 
 /* ----- add sheet ----- */
-.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 16px}
+.bulb svg{width:20px;height:20px;stroke:var(--film);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.choice{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 16px}
 .choice button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;text-align:left}
 .choice button:hover{border-color:var(--muted)}
 .choice button[aria-checked="true"]{border-color:var(--accent);background:var(--accent-bg)}
@@ -176,9 +177,24 @@ details.fold[open] summary{margin-bottom:8px}
 .lang button{padding:5px 10px;font-size:13px}
 .itabs{margin-bottom:12px;max-width:860px}
 .ilist{display:flex;flex-direction:column;gap:10px;max-width:860px}
-.idea{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.idea{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.irow-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;text-align:left;padding:12px 14px;cursor:pointer}
+.irow-head:hover{background:var(--bg)}
+.irow-head .av{width:30px;height:30px;font-size:12px;opacity:1}
+.memo{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:grid;place-items:center}
+.memo svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.imain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ititle{font-weight:600;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idea.open .ititle{white-space:normal}
+.imeta{font-size:12.5px;color:var(--muted)}
+.irow-head .chev{color:var(--muted);font-size:13px}
+.ibody{padding:0 14px 14px;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.ibody .lab{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ititle-in,.itext-in{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--bg);font-size:16px;line-height:1.5}
+.itext-in{min-height:110px;resize:vertical}
+.ititle-in:focus,.itext-in:focus{background:var(--surface)}
 .idea.fresh{border-left:4px solid var(--film)}
-.ihead{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+
 .ihead .av{width:24px;height:24px;font-size:11px;opacity:1}
 .ihead .grow{flex:1}
 .ist{font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 8px;border:1px solid currentColor}
@@ -882,20 +898,38 @@ function renderTasks(){
 }
 
 /* ================= Ideas ================= */
+const micControls = (box, note) => (window.SpeechRecognition || window.webkitSpeechRecognition)
+  ? `<button type="button" class="mic" data-mic="${box}" data-note="${note}" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Speak</span></button>
+     <div class="seg lang" role="group" aria-label="Speaking language"><button type="button" data-lang="en-US" aria-pressed="${(state.lang||"en-US")==="en-US"}">English</button><button type="button" data-lang="ar-SA" aria-pressed="${state.lang==="ar-SA"}">عربي</button></div>`
+  : `<span class="status">Tip: tap the mic on your keyboard to speak.</span>`;
 const IDEA_STATUS = { new:"New", saved:"Saved", used:"Turned into a video", dismissed:"Dismissed" };
 const ideaList = () => Object.entries(state.ideas||{}).map(([id,x]) => ({id, ...x})).sort((a,b) => (b.created||0) - (a.created||0));
 const newIdeas = () => isUmar() ? ideaList().filter(i => i.by === "khalid" && (i.status||"new") === "new").length : 0;
+const ideaTitle = i => (i.title && i.title.trim()) || ((i.text||"").split(/\n/)[0].trim().slice(0, 48) + ((i.text||"").split(/\n/)[0].trim().length > 48 ? "…" : "")) || "Untitled idea";
 function ideaCard(i){
-  const st = i.status || "new", v = i.video && vget(i.video);
-  const when = new Date(i.created||Date.now()).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
-  const acts = isUmar() && !state.readOnly
-    ? (st === "used" ? "" : `<div class="iacts"><button class="btn primary" type="button" data-idea-video="${esc(i.id)}">Turn into video</button>${st !== "saved" ? `<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="saved">Save for later</button>` : ""}<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="dismissed">Dismiss</button></div>`)
-    : (i.by === state.role && st === "new" && !state.readOnly ? `<div class="iacts"><button class="btn" type="button" data-idea-del="${esc(i.id)}">Delete</button></div>` : "");
-  return `<div class="idea${st === "new" && i.by === "khalid" && isUmar() ? " fresh" : ""}">
-    <div class="ihead"><span class="av ${i.by}" aria-hidden="true">${esc((PEOPLE[i.by]||"?")[0])}</span><span>${esc(PEOPLE[i.by]||"")} · ${esc(when)}${i.voice ? " · voice" : ""}</span><span class="grow"></span><span class="ist ist-${st}">${IDEA_STATUS[st]}</span></div>
-    <p class="itext" dir="auto">${esc(i.text)}</p>
-    ${v ? `<p class="ilink"><a href="#video" data-open="${esc(v.id)}">Open "${esc(v.title)}" ›</a></p>` : ""}
-    ${acts}</div>`;
+  const st = i.status || "new", v = i.video && vget(i.video), open = state.ideaOpen === i.id;
+  const d = new Date(i.created||Date.now());
+  const when = d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + ", " + d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  const canEdit = !state.readOnly && (isUmar() || i.by === state.role);
+  // Khalid only sees a badge once something has happened to his idea
+  const badge = isUmar() ? `<span class="ist ist-${st}">${IDEA_STATUS[st]}</span>` : (st === "used" ? `<span class="ist ist-used">Made into a video</span>` : "");
+  const acts = isUmar() && !state.readOnly && st !== "used"
+    ? `<button class="btn primary" type="button" data-idea-video="${esc(i.id)}">Turn into video</button>${st !== "saved" ? `<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="saved">Save for later</button>` : ""}${st !== "dismissed" ? `<button class="btn" type="button" data-idea-set="${esc(i.id)}" data-st="dismissed">Dismiss</button>` : ""}` : "";
+  const del = canEdit && (i.by === state.role) && st !== "used" ? `<button class="btn danger" type="button" data-idea-del="${esc(i.id)}">Delete</button>` : "";
+  return `<div class="idea${open ? " open" : ""}${st === "new" && i.by === "khalid" && isUmar() ? " fresh" : ""}">
+    <button type="button" class="irow-head" data-idea-toggle="${esc(i.id)}" aria-expanded="${open}">
+      ${isUmar() ? `<span class="av ${i.by}" aria-hidden="true">${esc((PEOPLE[i.by]||"?")[0])}</span>` : `<span class="memo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>`}
+      <span class="imain"><span class="ititle" dir="auto">${esc(ideaTitle(i))}</span><span class="imeta">${esc(when)}${isUmar() ? " · " + esc(PEOPLE[i.by]||"") : ""}${i.voice ? " · spoken" : ""}</span></span>
+      ${badge}<span class="chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
+    </button>
+    ${open ? `<div class="ibody">
+      ${canEdit ? `<label class="lab" for="it-${esc(i.id)}">Title</label><input class="ititle-in" id="it-${esc(i.id)}" data-idea-title="${esc(i.id)}" dir="auto" value="${esc(i.title||"")}" placeholder="${esc(ideaTitle({...i, title:""}))}">
+        <label class="lab" for="ix-${esc(i.id)}">Idea</label><textarea class="itext-in" id="ix-${esc(i.id)}" data-idea-text="${esc(i.id)}" dir="auto" rows="4">${esc(i.text||"")}</textarea>`
+        : `<p class="itext" dir="auto">${esc(i.text)}</p>`}
+      ${v ? `<p class="ilink"><a href="#video" data-open="${esc(v.id)}">Open "${esc(v.title)}" ›</a></p>` : ""}
+      ${acts || del ? `<div class="iacts">${acts}${del}</div>` : ""}
+    </div>` : ""}
+  </div>`;
 }
 function renderIdeas(){
   const all = ideaList(), me = state.role;
@@ -913,33 +947,34 @@ function renderIdeas(){
   const sr = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   $("v-ideas").innerHTML = `<div class="top"><h1>Ideas</h1></div>
     ${state.readOnly ? "" : `<form class="ibox" id="ideaForm">
-      <textarea id="ideaText" dir="auto" rows="3" placeholder="${isUmar() ? "Jot down an idea…" : "Got an idea for a video? Type it or tap the mic. It goes straight to Umar."}" aria-label="New idea">${esc(state.ideaDraft||"")}</textarea>
+      <textarea id="ideaText" dir="auto" rows="3" placeholder="${isUmar() ? "Jot down an idea…" : "Got an idea? Type it or tap Speak."}" aria-label="New idea">${esc(state.ideaDraft||"")}</textarea>
       <div class="irow">
-        ${sr ? `<button type="button" class="mic" id="micBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Speak</span></button>
+        ${sr ? `<button type="button" class="mic" id="micBtn" data-mic="ideaText" data-note="micNote" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Speak</span></button>
         <div class="seg lang" role="group" aria-label="Speaking language"><button type="button" data-lang="en-US" aria-pressed="${(state.lang||"en-US")==="en-US"}">English</button><button type="button" data-lang="ar-SA" aria-pressed="${state.lang==="ar-SA"}">عربي</button></div>` : `<span class="status">Tip: tap the mic on your keyboard to speak your idea.</span>`}
-        <span class="grow"></span><button class="btn primary" type="submit">${isUmar() ? "Save idea" : "Send to Umar"}</button>
+        <span class="grow"></span><button class="btn primary" type="submit">Save idea</button>
       </div>
       <p class="status" id="micNote" aria-live="polite"></p>
     </form>`}
     ${tabs ? `<div class="seg itabs" role="group" aria-label="Show">${tabs.map(([k,l,n]) => `<button type="button" data-itab="${k}" aria-pressed="${f===k}">${l}${n ? ` ${n}` : ""}</button>`).join("")}</div>` : `<div class="subhead">Your ideas</div>`}
-    <div class="ilist">${list.length ? list.map(ideaCard).join("") : `<p class="empty">${isUmar() ? (f === "inbox" ? "No new ideas from Khalid." : "Nothing here yet.") : "No ideas yet. Anything you send shows up here, and you'll see when Umar turns it into a video."}</p>`}</div>`;
+    <div class="ilist">${list.length ? list.map(ideaCard).join("") : `<p class="empty">${isUmar() ? (f === "inbox" ? "No new ideas from Khalid." : "Nothing here yet.") : "No ideas yet. Saved ideas show up here like voice memos. Tap one to read or edit it."}</p>`}</div>`;
 }
 // Voice: the phone's own speech-to-text, written straight into the idea box
-let rec = null, recBase = "";
-function startMic(){
+let rec = null, recBase = "", recBtn = null, recNote = null;
+function startMic(btn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
-  const box = $("ideaText"), btn = $("micBtn");
+  const box = $(btn.dataset.mic); recBtn = btn; recNote = $(btn.dataset.note);
   rec = new SR(); rec.lang = state.lang || "en-US"; rec.continuous = true; rec.interimResults = true;
   recBase = box.value ? box.value.replace(/\s*$/, " ") : "";
-  rec.onresult = e => { let fin = "", tmp = ""; for (let i = 0; i < e.results.length; i++){ (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (tmp += e.results[i][0].transcript)); } box.value = (recBase + fin + tmp).trimStart(); state.ideaDraft = box.value; state.voiceUsed = true; };
-  rec.onerror = e => { $("micNote").textContent = e.error === "not-allowed" || e.error === "service-not-allowed" ? "Microphone blocked. Allow it in your browser settings, or use the mic on your keyboard." : "Couldn't hear that. Try again."; stopMic(); };
-  rec.onend = () => { rec = null; btn.setAttribute("aria-pressed","false"); btn.querySelector("span").textContent = "Speak"; if ($("micNote").textContent === "Listening…") $("micNote").textContent = ""; };
-  try { rec.start(); btn.setAttribute("aria-pressed","true"); btn.querySelector("span").textContent = "Stop"; $("micNote").textContent = "Listening…"; } catch(e){ rec = null; }
+  rec.onresult = e => { let fin = "", tmp = ""; for (let i = 0; i < e.results.length; i++){ (e.results[i].isFinal ? (fin += e.results[i][0].transcript) : (tmp += e.results[i][0].transcript)); } box.value = (recBase + fin + tmp).trimStart(); if (box.id === "ideaText") state.ideaDraft = box.value; state.voiceUsed = true; };
+  rec.onerror = e => { if (recNote) recNote.textContent = e.error === "not-allowed" || e.error === "service-not-allowed" ? "Microphone blocked. Allow it in your browser settings, or use the mic on your keyboard." : "Couldn't hear that. Try again."; stopMic(); };
+  rec.onend = () => { rec = null; if (recBtn){ recBtn.setAttribute("aria-pressed","false"); recBtn.querySelector("span").textContent = "Speak"; } if (recNote && recNote.textContent === "Listening…") recNote.textContent = ""; };
+  try { rec.start(); btn.setAttribute("aria-pressed","true"); btn.querySelector("span").textContent = "Stop"; if (recNote) recNote.textContent = "Listening…"; } catch(e){ rec = null; }
 }
 function stopMic(){ if (rec){ try { rec.stop(); } catch(e){} } }
 document.addEventListener("click", e => {
-  if (e.target.closest("#micBtn")){ rec ? stopMic() : startMic(); return; }
+  const mb = e.target.closest("[data-mic]"); if (mb){ rec ? stopMic() : startMic(mb); return; }
   const lg = e.target.closest("[data-lang]"); if (lg){ state.lang = lg.dataset.lang; try { localStorage.setItem("ifa-lang", state.lang); } catch(_){} document.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", String(b === lg))); return; }
+  const tg = e.target.closest("[data-idea-toggle]"); if (tg){ state.ideaOpen = state.ideaOpen === tg.dataset.ideaToggle ? null : tg.dataset.ideaToggle; renderView(); return; }
   const it = e.target.closest("[data-itab]"); if (it){ state.ideaTab = it.dataset.itab; renderIdeas(); return; }
   const st = e.target.closest("[data-idea-set]"); if (st){ const id = st.dataset.ideaSet; save("ideas", id, {...state.ideas[id], status: st.dataset.st}); renderNav(); renderView(); return; }
   const dl = e.target.closest("[data-idea-del]"); if (dl){ remove("ideas", dl.dataset.ideaDel); return; }
@@ -947,13 +982,19 @@ document.addEventListener("click", e => {
     const first = (i.text || "").split(/[.!?\n]/)[0].slice(0, 70);
     openAdd("short", {title: first, script: `Idea from ${PEOPLE[i.by]}:\n${i.text}\n\n` + SHORT_SCRIPT, fromIdea: id}); return; }
 });
-document.addEventListener("input", e => { if (e.target.id === "ideaText") state.ideaDraft = e.target.value; });
+document.addEventListener("input", e => {
+  if (e.target.id === "ideaText") state.ideaDraft = e.target.value;
+  const tid = e.target.dataset.ideaTitle, xid = e.target.dataset.ideaText;
+  if (tid && state.ideas[tid]){ save("ideas", tid, {...state.ideas[tid], title: e.target.value}); const h = e.target.closest(".idea").querySelector(".ititle"); if (h) h.textContent = ideaTitle(state.ideas[tid]); }
+  if (xid && state.ideas[xid]){ save("ideas", xid, {...state.ideas[xid], text: e.target.value}); const h = e.target.closest(".idea").querySelector(".ititle"); if (h) h.textContent = ideaTitle(state.ideas[xid]); }
+});
 document.addEventListener("submit", e => {
   if (e.target.id !== "ideaForm") return; e.preventDefault(); stopMic();
   const text = $("ideaText").value.trim(); if (!text) return;
-  save("ideas", newId("i"), {text, by: state.role, status:"new", voice: !!state.voiceUsed, created: Date.now()});
-  state.ideaDraft = ""; state.voiceUsed = false; setStatus(isUmar() ? "Idea saved" : "Sent to Umar"); renderNav(); renderIdeas();
-  const n = $("micNote"); if (n) n.textContent = isUmar() ? "Saved." : "Sent to Umar.";
+  const nid = newId("i");
+  save("ideas", nid, {text, title:"", by: state.role, status:"new", voice: !!state.voiceUsed, created: Date.now()});
+  state.ideaDraft = ""; state.voiceUsed = false; setStatus("Idea saved"); renderNav(); renderIdeas();
+  const n = $("micNote"); if (n) n.textContent = "Saved.";
 });
 
 /* ================= Templates ================= */
@@ -1015,7 +1056,7 @@ function openSheet(v, presetDay){
   setTimeout(() => $("fTitle").focus(), 0);
   state.sheetFor = editing ? v.id : null;
 }
-function closeSheet(){ $("overlay").hidden = true; $("overlay").innerHTML = ""; }
+function closeSheet(){ stopMic(); $("overlay").hidden = true; $("overlay").innerHTML = ""; }
 
 /* ================= Add sheet: YouTube video, short or task ================= */
 function openAdd(type, preset){
@@ -1024,13 +1065,15 @@ function openAdd(type, preset){
   const longs = videoList().filter(x => x.kind === "long").sort(byPost).reverse();
   const upcoming = videoList().filter(v => !v.post || v.post >= todayKey()).sort(byPost);
   const draw = () => {
-    const vid = st.type !== "task";
+    const vid = st.type === "long" || st.type === "short";
+    const isIdea = st.type === "idea";
     $("overlay").innerHTML = `<form class="sheet" id="addSheet" role="dialog" aria-modal="true" aria-labelledby="addTitle">
       <h2 id="addTitle">What do you want to add?</h2>
       <div class="choice" role="radiogroup" aria-label="Type">
         <button type="button" role="radio" aria-checked="${st.type==="long"}" data-type="long"><span class="pl p-yt on">YT</span><b>YouTube video</b><small>Long, 8–15 min</small></button>
         <button type="button" role="radio" aria-checked="${st.type==="short"}" data-type="short"><span class="plats"><span class="pl p-ig on">IG</span><span class="pl p-tt on">TT</span><span class="pl p-sc on">SC</span></span><b>Short</b><small>20–40 sec</small></button>
-        <button type="button" role="radio" aria-checked="${st.type==="task"}" data-type="task"><span class="checkic">✓</span><b>Other task</b><small>Anything else</small></button>
+        <button type="button" role="radio" aria-checked="${st.type==="idea"}" data-type="idea"><span class="bulb" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span><b>Idea</b><small>Type or speak it</small></button>
+        <button type="button" role="radio" aria-checked="${st.type==="task"}" data-type="task"><span class="checkic">✓</span><b>Task</b><small>Anything else</small></button>
       </div>
       ${vid ? `<div class="fgrid">
         <div class="field full"><label for="aTitle">Title</label><input id="aTitle" dir="auto" required placeholder="${st.type==="long" ? "e.g. How to get your first 5 clients" : "e.g. Rating gym habits"}" value="${esc(preset.title||"")}"></div>
@@ -1039,6 +1082,10 @@ function openAdd(type, preset){
         <div class="field" id="aFilmWrap"><label for="aFilm">Record date</label><input type="date" id="aFilm" value="${esc(preset.film||"")}"></div>
         <div class="field"><label for="aPost">Post date</label><input type="date" id="aPost" value="${esc(preset.post||"")}"></div>
         <div class="field full"><label for="aScript">Script <small style="font-weight:400;color:var(--muted)">optional, paste it if it's ready</small></label><textarea id="aScript" dir="auto" placeholder="Paste from Google Docs, Word or Notes">${esc(preset.script||"")}</textarea></div>
+      </div>` : isIdea ? `<div class="fgrid">
+        <div class="field full"><label for="aIdea">Idea</label><textarea id="aIdea" dir="auto" required placeholder="Type it, or tap Speak and say it">${esc(preset.title||"")}</textarea>
+          <div class="irow">${micControls("aIdea","aNote")}</div><p class="status" id="aNote" aria-live="polite"></p></div>
+        <div class="field full"><label for="aITitle">Title <small style="font-weight:400;color:var(--muted)">optional</small></label><input id="aITitle" dir="auto" placeholder="Leave blank to use the first line"></div>
       </div>` : `<div class="fgrid">
         <div class="field full"><label for="aText">What needs doing?</label><input id="aText" dir="auto" required placeholder="e.g. Book the gym for Sunday's shoot" value="${esc(preset.title||"")}">
           <div class="quick" aria-label="Quick picks">${(QUICK[st.who]||[]).map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>
@@ -1049,16 +1096,20 @@ function openAdd(type, preset){
       <div class="foot"><span class="status" id="addNote"></span><div><button class="btn" type="button" data-act="close-sheet">Cancel</button><button class="btn primary" type="submit">Add</button></div></div>
     </form>`;
     $("overlay").hidden = false;
-    const f = $(vid ? "aTitle" : "aText"); setTimeout(() => f.focus(), 0);
+    const f = $(vid ? "aTitle" : isIdea ? "aIdea" : "aText"); setTimeout(() => f.focus(), 0);
     if ($("aParent")) $("aParent").onchange = e => { $("aFilmWrap").hidden = !!e.target.value; };
     $("addSheet").onclick = e => {
-      const t = e.target.closest("[data-type]"); if (t){ const keep = $(vid ? "aTitle" : "aText").value; st.type = t.dataset.type; preset.title = keep; draw(); return; }
+      const t = e.target.closest("[data-type]"); if (t){ stopMic(); const keep = $(vid ? "aTitle" : isIdea ? "aIdea" : "aText").value; st.type = t.dataset.type; preset.title = keep; draw(); return; }
       const q = e.target.closest("[data-quick]"); if (q){ $("aText").value = q.dataset.quick; $("aText").focus(); return; }
       const w = e.target.closest("[data-who]"); if (w){ st.who = w.dataset.who; preset.title = $("aText").value; const due = $("aDue").value, vidSel = $("aVid").value; draw(); $("aDue").value = due; $("aVid").value = vidSel; }
     };
     $("addSheet").onsubmit = e => {
       e.preventDefault();
-      if (vid){
+      if (isIdea){
+        stopMic(); const text = $("aIdea").value.trim(); if (!text) return;
+        save("ideas", newId("i"), {text, title: $("aITitle").value.trim(), by: state.role, status:"new", voice: !!state.voiceUsed, created: Date.now()});
+        state.voiceUsed = false; setStatus("Idea saved");
+      } else if (vid){
         const title = $("aTitle").value.trim(); if (!title) return;
         const script = $("aScript").value, parent = $("aParent") ? $("aParent").value : "";
         const short = st.type === "short";
@@ -1183,7 +1234,7 @@ document.addEventListener("click", e => {
   const v = vget(state.videoSel);
   switch (a.dataset.act){
     case "back": location.hash = state.prevView || "today"; break;
-    case "add": e.preventDefault(); openAdd(state.view === "tasks" ? "task" : "short"); break;
+    case "add": e.preventDefault(); openAdd(state.view === "tasks" ? "task" : state.view === "ideas" ? "idea" : isUmar() ? "short" : "idea"); break;
     case "add-long": openAdd("long"); break;
     case "add-task": openAdd("task"); break;
     case "add-slot": openAdd(a.dataset.kind, {post: state.sel}); break;
@@ -1308,7 +1359,8 @@ function save(col, id, body){
 function remove(col, id){ delete state[col][id]; queueItem(col, id, {}, true); renderNav(); renderView(); }
 function rerenderFromData(){
   renderNav();
-  const typing = document.activeElement && (document.activeElement.id === "scriptBox" || $("overlay").contains(document.activeElement));
+  const ae = document.activeElement;
+  const typing = ae && (ae.id === "scriptBox" || ae.id === "ideaText" || $("overlay").contains(ae) || (ae.closest && ae.closest(".idea")));
   if (!typing) renderView();
 }
 function askCode(wrong){
